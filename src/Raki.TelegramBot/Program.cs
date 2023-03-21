@@ -1,10 +1,23 @@
-﻿namespace Raki.TelegramBot
+using static System.Net.Mime.MediaTypeNames;
+
+namespace Raki.TelegramBot
 {
-    internal class Program
+    public class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            var host = Host.CreateDefaultBuilder()
+                .ConfigureServices(ConfigureServices)
+                .ConfigureServices(services => services.AddSingleton<Executor>())
+                .Build();
+
+            var executor = host.Services.GetService<Executor>();
+            await executor!.ExecuteAsync();
+        }
+
+        private static void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services)
+        {
+            // Todo : Add dependencies here
         }
     }
 }

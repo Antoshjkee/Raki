@@ -50,12 +50,8 @@ public class TelegramBotWebhookController : ControllerBase
         if (commandAttempt)
         {
             // DO SOMETHING WITH COMMAND
-            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, $"Received your command: {command!.Name}");
-        }
-        else
-        {
-            // IF COMMAND NOT FOUND
-            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, $"Received your message: {message.Text}");
+            var processResult = command.Process();
+            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, processResult);
         }
 
         return Ok();

@@ -19,7 +19,10 @@ public class BotCommandService
         if (name == null) return false;
         if (!name.StartsWith("/")) return false;
 
-        var commandFound = _botCommands.FirstOrDefault(x => x == name.Replace("/", string.Empty));
+        var rawCommand = name.Replace("/", string.Empty)
+            .Replace("@", string.Empty);
+
+        var commandFound = _botCommands.FirstOrDefault(x => x == rawCommand);
         if (commandFound == default(BotCustomCommand)) return false;
 
         command = commandFound;

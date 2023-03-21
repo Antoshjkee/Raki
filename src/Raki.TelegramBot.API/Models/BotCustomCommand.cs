@@ -4,18 +4,21 @@
     {
         public abstract string Name { get;}
 
-        public static bool operator == (string inputString, BotCustomCommand botCommand) => inputString == botCommand.Name;
+        protected bool Equals(BotCustomCommand other)
+        {
+            return Name == other.Name;
+        }
+
+        public abstract string Process();
+        public abstract string AdminProcess();
+
+        public static bool operator ==(string inputString, BotCustomCommand botCommand) => inputString == botCommand.Name;
 
         public static bool operator !=(string inputString, BotCustomCommand botCommand) => !(inputString == botCommand);
 
         public static bool operator ==(BotCustomCommand botCommand, string inputString) => inputString == botCommand.Name;
 
         public static bool operator !=(BotCustomCommand botCommand, string inputString) => !(inputString == botCommand);
-
-        protected bool Equals(BotCustomCommand other)
-        {
-            return Name == other.Name;
-        }
         public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj)) return false;

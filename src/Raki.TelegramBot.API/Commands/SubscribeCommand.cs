@@ -26,39 +26,66 @@ public class SubscribeCommand : BotCustomCommand
             return commandResponse;
         }
 
-        var isAdmin = await _telegramBot.IsAdminAsync(message.Chat.Id, message.From.Id);
-        if (!isAdmin)
+        var isSubscribeOnSelf = message.Text!.Trim() == $"/{Name}";
+
+        if (isSubscribeOnSelf)
         {
-            commandResponse.ResponseMessage = "У вас нет прав добавлять новых людей в список.";
-            return commandResponse;
+            var userName = message.From.Username;
+            var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
+            if (existingUser != null)
+            {
+                commandResponse.ResponseMessage = $"Юзер '{userName}' уже добавлен в список";
+                return commandResponse;
+            }
+
+            var playerRecord = new PlayerRecordEntity
+            {
+                PartitionKey = message.Chat.Id.ToString(),
+                UserName = userName,
+                RowKey = Guid.NewGuid().ToString()
+            };
+
+            await _storageService.AddPlayerAsync(playerRecord);
+
+            commandResponse.ResponseMessage = $"Вы успешно добавили себя в список";
+        }
+        else
+        {
+            var userName = message.Text!.Replace($"/{Name}", string.Empty).Trim();
+            var isValidUserName = _telegramBot.IsValidTelegramUsername(userName);
+
+            if (!isValidUserName)
+            {
+                commandResponse.ResponseMessage = "Юзернэйм указан неверно";
+                return commandResponse;
+            }
+
+            var isAdmin = await _telegramBot.IsAdminAsync(message.Chat.Id, message.From.Id);
+            if (!isAdmin)
+            {
+                commandResponse.ResponseMessage = "У вас нет прав добавлять новых людей в список";
+                return commandResponse;
+            }
+
+            var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
+            if (existingUser != null)
+            {
+                commandResponse.ResponseMessage = $"Юзер '{userName}' уже добавлен в список";
+                return commandResponse;
+            }
+
+            var playerRecord = new PlayerRecordEntity
+            {
+                PartitionKey = message.Chat.Id.ToString(),
+                UserName = userName,
+                RowKey = Guid.NewGuid().ToString()
+            };
+
+            await _storageService.AddPlayerAsync(playerRecord);
+
+            commandResponse.ResponseMessage = $"Юзера '{userName}' успешно добавили в список";
         }
 
-        var userName = message.Text!.Replace($"/{Name}", string.Empty).Trim();
-        var isValidUserName = _telegramBot.IsValidTelegramUsername(userName);
-
-        if (!isValidUserName)
-        {
-            commandResponse.ResponseMessage = "Юзернэйм указан неверно";
-            return commandResponse;
-        }
-
-        var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
-        if (existingUser != null)
-        {
-            commandResponse.ResponseMessage = $"Юзер '{userName}' уже добавлен в список";
-            return commandResponse;
-        }
-
-        var playerRecord = new PlayerRecordEntity
-        {
-            PartitionKey = message.Chat.Id.ToString(),
-            UserName = userName,
-            RowKey = Guid.NewGuid().ToString()
-        };
-
-        await _storageService.AddPlayerAsync(playerRecord);
-
-        commandResponse.ResponseMessage = $"Юзера '{userName}' успешно добавили в список";
         return commandResponse;
     }
 }

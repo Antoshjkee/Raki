@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Raki.TelegramBot.API.Models;
 using System.Text;
-using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -63,23 +62,10 @@ public class TelegramBotWebhookController : ControllerBase
         return Ok();
     }
 
-    [HttpGet("test")]
+    [HttpGet("info")]
     public async Task<IActionResult> Test()
     {
         var info = await _telegramBot.Client.GetWebhookInfoAsync();
         return Ok(info);
-    }
-
-    [HttpGet("adduser")]
-    public async Task<IActionResult> Test(string userName)
-    {
-        await _storageService.AddPlayerAsync(new PlayerRecordEntity
-        {
-            PartitionKey = "123",
-            UserName = userName,
-            RowKey = Guid.NewGuid().ToString(),
-        });
-
-        return Ok();
     }
 }

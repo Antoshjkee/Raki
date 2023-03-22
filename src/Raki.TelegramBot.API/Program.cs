@@ -10,8 +10,12 @@ namespace Raki.TelegramBot.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.Configure<BotConfig>(builder.Configuration.GetSection("BotConfig"));
+            builder.Services.Configure<BotOptions>(builder.Configuration.GetSection("BotConfig"));
+            builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
+
             builder.Services.AddSingleton<Services.TelegramBot>();
+            builder.Services.AddScoped<StorageService>();
+
             // Bot registers
             builder.Services.AddBotCommands();
             builder.Services.AddScoped<BotCommandService>();

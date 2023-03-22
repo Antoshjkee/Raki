@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Raki.TelegramBot.API.Models;
 using System.Text;
+using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -15,14 +16,17 @@ namespace Raki.TelegramBot.API.Controllers;
 public class TelegramBotWebhookController : ControllerBase
 {
     private readonly Services.TelegramBot _telegramBot;
-    private readonly IOptions<BotConfig> _botConfig;
+    private readonly IOptions<BotOptions> _botConfig;
     private readonly BotCommandService _botCommandService;
+    private readonly StorageService _storageService;
 
-    public TelegramBotWebhookController(Services.TelegramBot telegramBot, IOptions<BotConfig> botConfig, BotCommandService botCommandService)
+    public TelegramBotWebhookController(Services.TelegramBot telegramBot, IOptions<BotOptions> botConfig,
+        BotCommandService botCommandService, StorageService storageService)
     {
         _telegramBot = telegramBot;
         _botConfig = botConfig;
         _botCommandService = botCommandService;
+        _storageService = storageService;
     }
 
     [HttpGet("setup")]
@@ -51,7 +55,7 @@ public class TelegramBotWebhookController : ControllerBase
         {
             // DO SOMETHING WITH COMMAND
             var processResult = command.Process();
-            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, processResult);
+            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, processResult, ParseMode.MarkdownV2);
         }
 
         return Ok();
@@ -62,5 +66,18 @@ public class TelegramBotWebhookController : ControllerBase
     {
         var info = await _telegramBot.Client.GetWebhookInfoAsync();
         return Ok(info);
+    }
+
+    [HttpGet("adduser")]
+    public async Task<IActionResult> Test(string userName)
+    {
+        await _storageService.AddPlayerAsync(new PlayerRecordEntity
+        {
+            PartitionKey = "123",
+            UserName = userName,
+            RowKey = Guid.NewGuid().ToString(),
+        });
+
+        return Ok();
     }
 }

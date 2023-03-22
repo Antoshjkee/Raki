@@ -8,7 +8,7 @@ public class TelegramBot
 {
     public ITelegramBotClient Client { get; }
 
-    public TelegramBot(IOptions<BotConfig> botConfig)
+    public TelegramBot(IOptions<BotOptions> botConfig)
     {
         Client = new TelegramBotClient(botConfig.Value.BotToken);
     }

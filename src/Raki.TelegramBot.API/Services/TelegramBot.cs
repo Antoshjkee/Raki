@@ -13,13 +13,13 @@ public class TelegramBot
         Client = new TelegramBotClient(botConfig.Value.BotToken);
     }
 
-    public async Task<bool> IsAdmin(int chatId, int userId)
+    public async Task<bool> IsAdminAsync(long chatId, long userId)
     {
         var admins = await Client.GetChatAdministratorsAsync(chatId);
         return admins.Any(x => x.User.Id == userId);
     }
 
-    public static bool IsValidTelegramUsername(string username)
+    public bool IsValidTelegramUsername(string username)
     {
         if (string.IsNullOrEmpty(username)) return false;
 

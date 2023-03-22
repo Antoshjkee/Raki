@@ -1,3 +1,4 @@
+using Raki.TelegramBot.API.Commands;
 using Raki.TelegramBot.API.Models;
 namespace Raki.TelegramBot.API.Services;
 
@@ -20,7 +21,7 @@ public class BotCommandService
         if (!name.StartsWith("/")) return false;
 
         var rawCommand = name.Replace("/", string.Empty)
-            .Replace("@", string.Empty);
+            .Replace("@", string.Empty).Split(" ").First();
 
         var commandFound = _botCommands.FirstOrDefault(x => x == rawCommand);
         if (commandFound == default(BotCustomCommand)) return false;

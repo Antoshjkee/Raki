@@ -6,10 +6,14 @@ namespace Raki.TelegramBot.API.Commands
     public class InfoCommand : BotCustomCommand
     {
         public override string Name => "info";
-        public override ParseMode Mode => ParseMode.MarkdownV2;
-        public override Task<string> ProcessAsync(Message message)
+        public override Task<CommandResponse> ProcessAsync(Message message)
         {
-            return Task.FromResult("Хуинфо бля\\. Нет нихуя тут\\.");
+            var commandResponse = new CommandResponse
+            {
+                ResponseMessage = "Хуинфо бля. Нет нихуя тут."
+            };
+
+            return Task.FromResult(commandResponse);
         }
 
     }

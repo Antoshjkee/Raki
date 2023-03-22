@@ -53,8 +53,11 @@ public class TelegramBotWebhookController : ControllerBase
         var commandAttempt = _botCommandService.TryGetCommand(message.Text, out var command);
         if (commandAttempt)
         {
-            var processResult = await command!.ProcessAsync(message);
-            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, processResult, command.Mode);
+            var commandResponse = await command!.ProcessAsync(message);
+            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, 
+                commandResponse.ResponseMessage, 
+                parseMode: commandResponse.Mode, 
+                replyMarkup: commandResponse.Keyboard);
         }
 
         return Ok();

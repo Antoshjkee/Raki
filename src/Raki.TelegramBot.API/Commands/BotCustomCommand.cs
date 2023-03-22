@@ -1,18 +1,16 @@
 ﻿using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace Raki.TelegramBot.API.Commands
 {
     public abstract class BotCustomCommand
     {
         public abstract string Name { get;}
-        public virtual ParseMode Mode { get; } = ParseMode.Html;
         protected bool Equals(BotCustomCommand other)
         {
             return Name == other.Name;
         }
 
-        public abstract Task<string> ProcessAsync(Message message);
+        public abstract Task<CommandResponse> ProcessAsync(Message message);
 
         public static bool operator ==(string inputString, BotCustomCommand botCommand) => inputString == botCommand.Name;
 

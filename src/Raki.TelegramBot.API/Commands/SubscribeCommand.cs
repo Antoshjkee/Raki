@@ -16,20 +16,38 @@ public class SubscribeCommand : BotCustomCommand
     }
 
     public override string Name => "subscribe";
-    public override async Task<string> ProcessAsync(Message message)
+    public override async Task<CommandResponse> ProcessAsync(Message message)
     {
-        if (message.From == null) return "Что-то пошло не так...";
+        var commandResponse = new CommandResponse();
+
+        if (message.From == null)
+        {
+            commandResponse.ResponseMessage = "Что-то пошло не так...";
+            return commandResponse;
+        }
 
         var isAdmin = await _telegramBot.IsAdminAsync(message.Chat.Id, message.From.Id);
-        if (!isAdmin) return "У вас нет прав добавлять новых людей в список.";
+        if (!isAdmin)
+        {
+            commandResponse.ResponseMessage = "У вас нет прав добавлять новых людей в список.";
+            return commandResponse;
+        }
 
         var userName = message.Text!.Replace($"/{Name}", string.Empty).Trim();
         var isValidUserName = _telegramBot.IsValidTelegramUsername(userName);
 
-        if (!isValidUserName) return "Юзернэйм указан неверно";
+        if (!isValidUserName)
+        {
+            commandResponse.ResponseMessage = "Юзернэйм указан неверно";
+            return commandResponse;
+        }
 
         var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
-        if (existingUser != null) return $"Юзер '{userName}' уже добавлен в список";
+        if (existingUser != null)
+        {
+            commandResponse.ResponseMessage = $"Юзер '{userName}' уже добавлен в список";
+            return commandResponse;
+        }
 
         var playerRecord = new PlayerRecordEntity
         {
@@ -40,6 +58,7 @@ public class SubscribeCommand : BotCustomCommand
 
         await _storageService.AddPlayerAsync(playerRecord);
 
-        return $"Юзера '{userName}' успешно добавили в список";
+        commandResponse.ResponseMessage = $"Юзера '{userName}' успешно добавили в список";
+        return commandResponse;
     }
 }

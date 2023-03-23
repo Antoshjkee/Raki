@@ -58,7 +58,7 @@ public class TelegramBotWebhookController : ControllerBase
             var result = update.Type switch
             {
                 UpdateType.Message => await ProcessMessageAsync(update.Message),
-                UpdateType.CallbackQuery => ProcessCallbackQueryAsync(update.CallbackQuery),
+                UpdateType.CallbackQuery => await ProcessCallbackQueryAsync(update.CallbackQuery),
                 _ => Ok(),
             };
 
@@ -90,8 +90,16 @@ public class TelegramBotWebhookController : ControllerBase
         return Ok();
     }
 
-    private IActionResult ProcessCallbackQueryAsync(CallbackQuery callbackQuery)
+    private async Task<IActionResult> ProcessCallbackQueryAsync(CallbackQuery callbackQuery)
     {
+        if (callbackQuery == null) return Ok();
+
+        var callbackCommandAttempt = _botCommandService.TryGetCallbackCommand(callbackQuery.Data, out var callbackCommand);
+        if (callbackCommandAttempt)
+        {
+            await callbackCommand!.ProcessAsync(callbackQuery);
+        }
+
         return Ok();
     }
 }

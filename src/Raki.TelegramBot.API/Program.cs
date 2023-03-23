@@ -20,6 +20,8 @@ namespace Raki.TelegramBot.API
 
             // Bot registers
             builder.Services.AddBotCommands();
+            builder.Services.AddBotCallbackCommands();
+
             builder.Services.AddScoped<BotCommandService>();
             
             builder.Services.AddControllers();

@@ -45,10 +45,6 @@ public class EveryoneCommand : BotCustomCommand
             else
             {
                 var sessionLtTime = DateTime.UtcNow.AddHours(2);
-
-               // var gmtPlus2 = TimeZoneInfo.FindSystemTimeZoneById(_timeZoneOptions.Value.Zone);
-               // var nowGmtPlus2 = DateTimeOffset.UtcNow.ToOffset(gmtPlus2.GetUtcOffset(DateTimeOffset.UtcNow));
-
                 var newSession = new SessionRecordEntity
                 {
                     RowKey = Guid.NewGuid().ToString(),
@@ -75,10 +71,10 @@ public class EveryoneCommand : BotCustomCommand
             {
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Плюс", "plus"),
-                    InlineKeyboardButton.WithCallbackData("Минус", "minus")
+                    InlineKeyboardButton.WithCallbackData("Плюс", $"plus-{session.SessionId}"),
+                    InlineKeyboardButton.WithCallbackData("Минус", $"minus-{session.SessionId}")
                 },
-            });
+            }); ;
 
             commandResponse.Keyboard = keyboard;
         }

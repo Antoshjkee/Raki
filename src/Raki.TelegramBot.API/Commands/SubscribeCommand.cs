@@ -46,7 +46,7 @@ public class SubscribeCommand : BotCustomCommand
             }
             else
             {
-                var existingUser = await _storageService.GetPlayerByUserNameAsync(message.Chat.Id.ToString(), userName);
+                var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
                 if (existingUser != null)
                 {
                     commandResponse.ResponseMessage = $"Юзер '@{userName}' уже добавлен в список";
@@ -85,7 +85,7 @@ public class SubscribeCommand : BotCustomCommand
                 return commandResponse;
             }
 
-            var existingUser = await _storageService.GetPlayerByUserNameAsync(message.Chat.Id.ToString(), userName);
+            var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
             if (existingUser != null)
             {
                 commandResponse.ResponseMessage = $"Юзер '{userName}' уже добавлен в список";

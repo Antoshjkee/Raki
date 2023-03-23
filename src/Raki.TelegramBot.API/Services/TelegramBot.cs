@@ -23,7 +23,7 @@ public class TelegramBot
     {
         if (string.IsNullOrEmpty(username)) return false;
 
-        if (username[0] != '@') return false;
+        //if (username[0] != '@') return false;
 
         if (username.Length is < 5 or > 32) return false;
 

@@ -1,4 +1,4 @@
-using Azure.Data.Tables;
+﻿using Azure.Data.Tables;
 using Microsoft.Extensions.Options;
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Models;
@@ -29,7 +29,8 @@ public class StorageService
 
     public async Task AddPlayerAsync(PlayerRecordEntity player)
     {
-        var user = await GetPlayerByUserNameAsync(player.PartitionKey, player.UserName);
+        var playerData = player.UserName ?? player.FirstName;
+        var user = await GetPlayerAsync(player.PartitionKey, playerData);
 
         if (user == null)
         {
@@ -39,7 +40,7 @@ public class StorageService
 
     public async Task DeletePlayerAsync(string partitionKey, long id)
     {
-        var user = await GetPlayerByIdAsync(partitionKey, id);
+        var user = await GetPlayerAsync(partitionKey, id.ToString());
 
         if (user != null)
         {
@@ -47,34 +48,20 @@ public class StorageService
         }
     }
 
-    public async Task<PlayerRecordEntity?> GetPlayerByUserNameAsync(string partitionKey, string userName)
+    public Task<PlayerRecordEntity?> GetPlayerAsync(string partitionKey, string playerData)
     {
-        var filterCondition = $"PartitionKey eq '{partitionKey}' and UserName eq '{userName}'";
-        var records = UserTableClient.QueryAsync<PlayerRecordEntity>(filterCondition);
+        var filterCondition = $"PartitionKey eq '{partitionKey}'";
 
-        await foreach (var record in records)
-        {
-            // Assuming its only one
-            return record;
-        }
+        var records = UserTableClient.Query<PlayerRecordEntity>(filterCondition);
+        long.TryParse(playerData, out var parsedId);
 
-        return default;
+        var foundUser = records.FirstOrDefault(x => (x.FirstName == playerData && x.UserName == null)
+        || x.UserName == $"@{playerData}"
+        || x.UserName == playerData.Replace("@", string.Empty)
+        || x.Id == parsedId);
+
+        return Task.FromResult(foundUser);
     }
-
-    public async Task<PlayerRecordEntity?> GetPlayerByFirsNameAsync(string partitionKey, string firstName)
-    {
-        var filterCondition = $"PartitionKey eq '{partitionKey}' and FirstName eq '{firstName}'";
-        var records = UserTableClient.QueryAsync<PlayerRecordEntity>(filterCondition);
-
-        await foreach (var record in records)
-        {
-            // Assuming its only one
-            return record;
-        }
-
-        return default;
-    }
-
 
     public async Task<PlayerRecordEntity?> GetPlayerByIdAsync(string partitionKey, long id)
     {
@@ -110,7 +97,7 @@ public class StorageService
     }
 
     // Session
-    public async Task<SessionRecordEntity?> GetSesssion(string partitionKey, int sessionId)
+    public async Task<SessionRecordEntity?> GetSesssion(string partitionKey, string sessionId)
     {
         var filterCondition = $"PartitionKey eq '{partitionKey}' and SessionId eq '{sessionId}'";
         var records = SessionsTableClient.QueryAsync<SessionRecordEntity>(filterCondition);
@@ -123,29 +110,22 @@ public class StorageService
         return default;
     }
 
+
+    public Task<SessionRecordEntity?> GetSessionByIdAsync(string partitionKey, string sessionId)
+    {
+        var filterCondition = $"PartitionKey eq '{partitionKey}' and SessionId eq '{sessionId}'";
+        var records = SessionsTableClient.Query<SessionRecordEntity>(filterCondition);
+        return Task.FromResult(records.FirstOrDefault());
+    }
+
     public async Task CreateSessionAsync(SessionRecordEntity sessionRecordEntity)
     {
-        var session = await GetSesssion(sessionRecordEntity.PartitionKey, sessionRecordEntity.SessionId);
+        var session = await GetSesssion(sessionRecordEntity.PartitionKey, sessionRecordEntity.SessionId.ToString());
 
         if (session == null)
         {
             await SessionsTableClient.AddEntityAsync(sessionRecordEntity);
         }
-    }
-
-    public async Task<(bool, SessionRecordEntity?)> IsSessionAvailableAsync(string partitionKey, int sessionId)
-    {
-        var session = await GetSesssion(partitionKey, sessionId);
-
-        var gmtPlus2 = TimeZoneInfo.FindSystemTimeZoneById(_timeZoneOptions.Value.Zone);
-        var nowGmtPlus2 = DateTimeOffset.UtcNow.ToOffset(gmtPlus2.GetUtcOffset(DateTimeOffset.UtcNow));
-
-        if (session != null && session.SessionEnd > nowGmtPlus2)
-        {
-            return (true, session);
-        }
-
-        return (false, default);
     }
 
     public Task<SessionRecordEntity?> GetCurrentSessionAsync(string partitionKey)
@@ -157,10 +137,31 @@ public class StorageService
         return Task.FromResult(records.FirstOrDefault(x => x.SessionEnd >= sessionLtTime));
     }
 
+    // User Sessions
+    public async Task AddUserToSession(PlayerSessionRecordEntity playerSessionRecord)
+    {
+        var currentUserSession = await GetUserSessionAsync(playerSessionRecord.PartitionKey,
+            playerSessionRecord.SessionId.ToString(), playerSessionRecord.UserId);
+
+        if (currentUserSession == null)
+        {
+            await UsersSessionsTableClient.AddEntityAsync(playerSessionRecord);
+
+        }
+    }
+
+    public Task<PlayerSessionRecordEntity?> GetUserSessionAsync(string partitionKey, string sessionId, long userId)
+    {
+        var filterCondition = $"PartitionKey eq '{partitionKey}' and SessionId eq '{sessionId}' and UserId eq '{userId}'";
+        var records = UsersSessionsTableClient.Query<PlayerSessionRecordEntity>(filterCondition);
+        return Task.FromResult(records.FirstOrDefault());
+    }
+
     // Factories
     private static TableClient ClientFactory(string connectionString, string tableName)
     {
         var serviceClient = new TableServiceClient(connectionString);
         return serviceClient.GetTableClient(tableName);
     }
+
 }

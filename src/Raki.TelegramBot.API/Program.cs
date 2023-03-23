@@ -12,6 +12,8 @@ namespace Raki.TelegramBot.API
 
             builder.Services.Configure<BotOptions>(builder.Configuration.GetSection("BotConfig"));
             builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
+            builder.Services.Configure<TimezoneOptions>(builder.Configuration.GetSection("TimeZone"));
+
 
             builder.Services.AddSingleton<Services.TelegramBot>();
             builder.Services.AddScoped<StorageService>();

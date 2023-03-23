@@ -7,6 +7,8 @@ using Raki.TelegramBot.API.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Raki.TelegramBot.API.Commands;
 
 namespace Raki.TelegramBot.API.Controllers;
 
@@ -35,6 +37,13 @@ public class TelegramBotWebhookController : ControllerBase
         return Ok($"Webhook : '{_botConfig.Value.WebhookUrl}' has been setup");
     }
 
+    [HttpGet("info")]
+    public async Task<IActionResult> Test()
+    {
+        var info = await _telegramBot.Client.GetWebhookInfoAsync();
+        return Ok(info);
+    }
+
     [HttpPost]
     public async Task<IActionResult> SendMessage()
     {
@@ -42,30 +51,47 @@ public class TelegramBotWebhookController : ControllerBase
         var requestBody = await reader.ReadToEndAsync();
 
         var update = JsonConvert.DeserializeObject<Update>(requestBody);
-
         if (update == null) return BadRequest();
-        if (update.Type != UpdateType.Message) return Ok();
 
-        var message = update.Message;
+        try
+        {
+            var result = update.Type switch
+            {
+                UpdateType.Message => await ProcessMessageAsync(update.Message),
+                UpdateType.CallbackQuery => ProcessCallbackQueryAsync(update.CallbackQuery),
+                _ => Ok(),
+            };
+
+            return result;
+        }
+        catch (Exception exception)
+        {
+            await _telegramBot.Client.SendTextMessageAsync(update.Message.Chat.Id, "Exception : " + exception.Message);
+        }
+
+        return Ok();
+    }
+
+    private async Task<IActionResult> ProcessMessageAsync(Message message)
+    {
         if (message == null) return Ok();
 
         var commandAttempt = _botCommandService.TryGetCommand(message.Text, out var command);
         if (commandAttempt)
         {
             var commandResponse = await command!.ProcessAsync(message);
-            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, 
-                commandResponse.ResponseMessage, 
-                parseMode: commandResponse.Mode, 
-                replyMarkup: commandResponse.Keyboard);
+            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id,
+                commandResponse.ResponseMessage,
+                parseMode: commandResponse.Mode,
+                replyMarkup: commandResponse.Keyboard,
+                replyToMessageId: commandResponse.ReplyToId);
         }
 
         return Ok();
     }
 
-    [HttpGet("info")]
-    public async Task<IActionResult> Test()
+    private IActionResult ProcessCallbackQueryAsync(CallbackQuery callbackQuery)
     {
-        var info = await _telegramBot.Client.GetWebhookInfoAsync();
-        return Ok(info);
+        return Ok();
     }
 }

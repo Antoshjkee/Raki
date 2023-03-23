@@ -8,6 +8,7 @@ public class CommandResponse
     public string? ResponseMessage { get; set; }
     public ParseMode Mode { get; set; }
     public InlineKeyboardMarkup? Keyboard { get; set; }
+    public int? ReplyToId { get; set; }
 
     public CommandResponse()
     {

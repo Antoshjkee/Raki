@@ -18,7 +18,10 @@ public class UnsubscribeCommand : BotCustomCommand
     public override string Name => "unsubscribe";
     public override async Task<CommandResponse> ProcessAsync(Message message)
     {
-        var commandResponse = new CommandResponse();
+        var commandResponse = new CommandResponse
+        {
+            ReplyToId = message.MessageId
+        };
 
         if (message.From == null)
         {

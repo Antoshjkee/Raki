@@ -13,14 +13,22 @@ public class BotCommandService
 
     public BotCustomCommand? GetCommand(string name) => _botCommands.FirstOrDefault(x => x == name);
 
-    public bool TryGetCommand(string? name, out BotCustomCommand? command)
+    public bool TryGetCommand(string? messageText, out BotCustomCommand? command)
     {
         command = default;
 
-        if (name == null) return false;
-        if (!name.StartsWith("/")) return false;
+        if (messageText == null) return false;
 
-        var rawCommand = name.Replace("/", string.Empty)
+        // TODO : integrate it better
+        if (messageText.Contains("/everyone"))
+        {
+            command = _botCommands.FirstOrDefault(x => x.Name == "everyone");
+            return true;
+        }
+
+        if (!messageText.StartsWith("/")) return false;
+
+        var rawCommand = messageText.Replace("/", string.Empty)
             .Replace("@", string.Empty).Split(" ").First();
 
         var commandFound = _botCommands.FirstOrDefault(x => x == rawCommand);

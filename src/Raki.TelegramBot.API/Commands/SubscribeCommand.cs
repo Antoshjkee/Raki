@@ -31,17 +31,32 @@ public class SubscribeCommand : BotCustomCommand
         if (isSubscribeOnSelf)
         {
             var userName = message.From.Username;
-            var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
-            if (existingUser != null)
+
+            if (userName == null)
             {
-                commandResponse.ResponseMessage = $"Юзер '{userName}' уже добавлен в список";
-                return commandResponse;
+                var existingUser = await _storageService.GetPlayerByIdAsync(message.Chat.Id.ToString(), message.From.Id);
+                if (existingUser != null)
+                {
+                    commandResponse.ResponseMessage = $"Юзер '{message.From.FirstName}' уже добавлен в список";
+                    return commandResponse;
+                }
+            }
+            else
+            {
+                var existingUser = await _storageService.GetPlayerByUserNameAsync(message.Chat.Id.ToString(), userName);
+                if (existingUser != null)
+                {
+                    commandResponse.ResponseMessage = $"Юзер '@{userName}' уже добавлен в список";
+                    return commandResponse;
+                }
             }
 
             var playerRecord = new PlayerRecordEntity
             {
                 PartitionKey = message.Chat.Id.ToString(),
-                UserName = userName,
+                UserName = message.From.Username,
+                FirstName = message.From.FirstName,
+                Id = message.From.Id,
                 RowKey = Guid.NewGuid().ToString()
             };
 
@@ -67,7 +82,7 @@ public class SubscribeCommand : BotCustomCommand
                 return commandResponse;
             }
 
-            var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
+            var existingUser = await _storageService.GetPlayerByUserNameAsync(message.Chat.Id.ToString(), userName);
             if (existingUser != null)
             {
                 commandResponse.ResponseMessage = $"Юзер '{userName}' уже добавлен в список";

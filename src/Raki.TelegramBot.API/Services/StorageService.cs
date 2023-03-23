@@ -2,6 +2,7 @@ using Azure.Data.Tables;
 using Microsoft.Extensions.Options;
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Models;
+using Telegram.Bot.Types;
 
 namespace Raki.TelegramBot.API.Services;
 
@@ -17,7 +18,7 @@ public class StorageService
 
     public async Task AddPlayerAsync(PlayerRecordEntity player)
     {
-        var user = await GetPlayerAsync(player.PartitionKey, player.UserName);
+        var user = await GetPlayerByUserNameAsync(player.PartitionKey, player.UserName);
 
         if (user == null)
         {
@@ -25,9 +26,9 @@ public class StorageService
         }
     }
 
-    public async Task DeletePlayerAsync(string partitionKey, string userName)
+    public async Task DeletePlayerAsync(string partitionKey, long id)
     {
-        var user = await GetPlayerAsync(partitionKey, userName);
+        var user = await GetPlayerByIdAsync(partitionKey, id);
 
         if (user != null)
         {
@@ -35,9 +36,38 @@ public class StorageService
         }
     }
 
-    public async Task<PlayerRecordEntity?> GetPlayerAsync(string partitionKey, string userName)
+    public async Task<PlayerRecordEntity?> GetPlayerByUserNameAsync(string partitionKey, string userName)
     {
         var filterCondition = $"PartitionKey eq '{partitionKey}' and UserName eq '{userName}'";
+        var records = _tableClient.QueryAsync<PlayerRecordEntity>(filterCondition);
+
+        await foreach (var record in records)
+        {
+            // Assuming its only one
+            return record;
+        }
+
+        return default;
+    }
+
+    public async Task<PlayerRecordEntity?> GetPlayerByFirsNameAsync(string partitionKey, string firstName)
+    {
+        var filterCondition = $"PartitionKey eq '{partitionKey}' and FirstName eq '{firstName}'";
+        var records = _tableClient.QueryAsync<PlayerRecordEntity>(filterCondition);
+
+        await foreach (var record in records)
+        {
+            // Assuming its only one
+            return record;
+        }
+
+        return default;
+    }
+
+
+    public async Task<PlayerRecordEntity?> GetPlayerByIdAsync(string partitionKey, long id)
+    {
+        var filterCondition = $"PartitionKey eq '{partitionKey}' and Id eq '{id}'";
         var records = _tableClient.QueryAsync<PlayerRecordEntity>(filterCondition);
 
         await foreach (var record in records)
@@ -61,5 +91,10 @@ public class StorageService
         }
 
         return result;
+    }
+
+    public async Task DeletePlayerAsync(PlayerRecordEntity existingUser)
+    {
+        _ = await _tableClient.DeleteEntityAsync(existingUser.PartitionKey, existingUser.RowKey);
     }
 }

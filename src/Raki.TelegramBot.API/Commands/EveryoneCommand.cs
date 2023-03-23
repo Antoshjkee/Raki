@@ -21,21 +21,35 @@ public class EveryoneCommand : BotCustomCommand
             Mode = ParseMode.Html
 
         };
-            var players = (await _storageService.GetPlayersAsync(message.Chat.Id.ToString())).ToList();
+        var players = (await _storageService.GetPlayersAsync(message.Chat.Id.ToString())).ToList();
+
+        var playersWithUserName = players.Where(x => x.UserName != null).ToList();
+        var playersWithName = players.Where(x => x.UserName == null).ToList();
 
         if (players.Any())
         {
-            commandResponse.ResponseMessage = string.Join(' ', players.Select(x => x.UserName));
-            return commandResponse;
+            var resultList = playersWithUserName.Select(x => $"@{x.UserName}").ToList();
+            resultList.AddRange(playersWithName.Select(x => $"<a href=\"tg://user?id={x.Id}\">{x.FirstName}</a>"));
+
+            commandResponse.ResponseMessage = string.Join(' ', resultList);
+        }
+        else
+        {
+            commandResponse.ResponseMessage = "Юзеров нет в списке";
         }
 
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        //add telegram buttons
+        var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new [] { InlineKeyboardButton.WithCallbackData("+", "plus") },
-            new [] { InlineKeyboardButton.WithCallbackData("-", "minus") },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Плюс", "subscribe"),
+                InlineKeyboardButton.WithCallbackData("Минус", "unsubscribe")
+            },
         });
 
-        commandResponse.Keyboard = inlineKeyboard;
+        commandResponse.Keyboard = keyboard;
+    
 
         return commandResponse;
     }

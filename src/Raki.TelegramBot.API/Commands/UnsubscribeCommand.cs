@@ -1,4 +1,5 @@
-﻿using Raki.TelegramBot.API.Services;
+﻿using Raki.TelegramBot.API.Entities;
+using Raki.TelegramBot.API.Services;
 using Telegram.Bot.Types;
 
 namespace Raki.TelegramBot.API.Commands;
@@ -29,37 +30,47 @@ public class UnsubscribeCommand : BotCustomCommand
 
         if (isUnSubscribeOnSelf)
         {
+            var existingUser = default(PlayerRecordEntity);
+
             var userName = message.From.Username;
-            var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
-            if (existingUser == null)
+            if (userName == null)
             {
-                commandResponse.ResponseMessage = $"Вас нет в списке";
-                return commandResponse;
+                existingUser = await _storageService.GetPlayerByIdAsync(message.Chat.Id.ToString(), message.From.Id);
+                if (existingUser == null)
+                {
+                    commandResponse.ResponseMessage = $"Вас нет в списке";
+                    return commandResponse;
+                }
+            }
+            else
+            {
+                existingUser = await _storageService.GetPlayerByUserNameAsync(message.Chat.Id.ToString(), userName);
+                if (existingUser == null)
+                {
+                    commandResponse.ResponseMessage = $"Вас нет в списке";
+                    return commandResponse;
+                }
             }
 
-            await _storageService.DeletePlayerAsync(message.Chat.Id.ToString(), existingUser.UserName);
+            await _storageService.DeletePlayerAsync(existingUser);
             commandResponse.ResponseMessage = $"Вы удалили себя из списка";
             return commandResponse;
         }
         else
         {
-            var userName = message.Text!.Replace($"/{Name}", string.Empty).Trim();
-            var isValidUserName = _telegramBot.IsValidTelegramUsername(userName);
-
-            if (!isValidUserName)
-            {
-                commandResponse.ResponseMessage = "Юзернэйм указан неверно";
-                return commandResponse;
-            }
-
             var isAdmin = await _telegramBot.IsAdminAsync(message.Chat.Id, message.From.Id);
             if (!isAdmin)
             {
-                commandResponse.ResponseMessage = "У вас нет прав удалять людей из списка";
+                commandResponse.ResponseMessage = "У вас нет прав удалять людей из списка. Только себя.";
                 return commandResponse;
             }
 
-            var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
+            var userName = message.Text!.Replace($"/{Name}", string.Empty).Trim();
+            var isValidUserName = _telegramBot.IsValidTelegramUsername(userName);
+
+            var existingUser = !isValidUserName
+                ? await _storageService.GetPlayerByFirsNameAsync(message.Chat.Id.ToString(), userName)
+                : await _storageService.GetPlayerByUserNameAsync(message.Chat.Id.ToString(), userName);
 
             if (existingUser == null)
             {
@@ -67,7 +78,7 @@ public class UnsubscribeCommand : BotCustomCommand
                 return commandResponse;
             }
 
-            await _storageService.DeletePlayerAsync(message.Chat.Id.ToString(), existingUser.UserName);
+            await _storageService.DeletePlayerAsync(message.Chat.Id.ToString(), existingUser.Id);
             commandResponse.ResponseMessage = $"Юзер '{userName}' удалён из списка";
             return commandResponse;
         }

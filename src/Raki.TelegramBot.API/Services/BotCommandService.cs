@@ -23,7 +23,7 @@ public class BotCommandService
         if (messageText == null) return false;
 
         // TODO : integrate it better
-        if (messageText.Contains("/everyone") || messageText.Contains('@everyone'))
+        if (messageText.Contains("/everyone") || messageText.Contains("@everyone"))
         {
             command = _botCommands.FirstOrDefault(x => x.Name == "everyone");
             return true;

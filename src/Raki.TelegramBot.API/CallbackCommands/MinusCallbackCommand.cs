@@ -64,6 +64,7 @@ namespace Raki.TelegramBot.API.CallbackCommands
                 await _storageService.AddUserToSession(userSession);
 
                 response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' дал минуса";
+                response.ResponseMessage += await AddRespondedPlayersAsync(partitionKey, sessionId);
             }
             else if (currentUserSession.IsPlus)
             {
@@ -71,6 +72,8 @@ namespace Raki.TelegramBot.API.CallbackCommands
                 await _storageService.UpdateUserSessionAsync(currentUserSession);
 
                 response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' передумал и решил минусануть.";
+                response.ResponseMessage += await AddRespondedPlayersAsync(partitionKey, sessionId);
+
             }
 
             await _telegramBot.Client.AnswerCallbackQueryAsync(callbackQuery.Id);
@@ -83,6 +86,32 @@ namespace Raki.TelegramBot.API.CallbackCommands
             }
 
             return response;
+        }
+
+        private async Task<string> AddRespondedPlayersAsync(string partitionKey, string sessionId)
+        {
+            var result = string.Empty;
+
+            var plusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, true);
+            var minusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, false);
+
+            if (!string.IsNullOrEmpty(plusPlayersUserTags))
+            {
+                //👍
+                result += "\n\n" +
+                    $"Плюс {char.ConvertFromUtf32(0x1F44D)}" + "\n" +
+                    $"{plusPlayersUserTags}";
+            }
+
+            if (!string.IsNullOrEmpty(minusPlayersUserTags))
+            {
+                //👎
+                result += "\n\n" +
+                    $"Минус {char.ConvertFromUtf32(0x1F44E)}" + "\n" +
+                    $"{minusPlayersUserTags}";
+            }
+
+            return result;
         }
     }
 }

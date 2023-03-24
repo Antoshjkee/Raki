@@ -1,6 +1,8 @@
-﻿using Raki.TelegramBot.API.Commands;
+﻿using Azure;
+using Raki.TelegramBot.API.Commands;
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Services;
+using System.Collections.Concurrent;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -65,6 +67,7 @@ namespace Raki.TelegramBot.API.CallbackCommands
                 await _storageService.AddUserToSession(userSession);
 
                 response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' дал плюса";
+                response.ResponseMessage += await AddRespondedPlayersAsync(partitionKey, sessionId);
             }
             else if (!currentUserSession.IsPlus)
             {
@@ -72,18 +75,46 @@ namespace Raki.TelegramBot.API.CallbackCommands
                 await _storageService.UpdateUserSessionAsync(currentUserSession);
 
                 response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' передумал и решил плюсануть.";
+                response.ResponseMessage += await AddRespondedPlayersAsync(partitionKey, sessionId);
             }
 
             await _telegramBot.Client.AnswerCallbackQueryAsync(callbackQuery.Id);
 
             if (response.ResponseMessage != null)
             {
-                await _telegramBot.Client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, 
-                    response.ResponseMessage, 
+                await _telegramBot.Client.SendTextMessageAsync(callbackQuery.Message.Chat.Id,
+                    response.ResponseMessage,
                     parseMode: response.Mode);
             }
 
             return response;
+        }
+
+
+        private async Task<string> AddRespondedPlayersAsync(string partitionKey, string sessionId)
+        {
+            var result = string.Empty;
+
+            var plusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, true);
+            var minusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, false);
+
+            if (!string.IsNullOrEmpty(plusPlayersUserTags))
+            {
+                //👍
+                result += "\n\n" +
+                    $"Плюс {char.ConvertFromUtf32(0x1F44D)}" + "\n" +
+                    $"{plusPlayersUserTags}";
+            }
+
+            if (!string.IsNullOrEmpty(minusPlayersUserTags))
+            {
+                //👎
+                result += "\n\n" +
+                    $"Минус {char.ConvertFromUtf32(0x1F44E)}" + "\n" +
+                    $"{minusPlayersUserTags}";
+            }
+
+            return result;
         }
     }
 }

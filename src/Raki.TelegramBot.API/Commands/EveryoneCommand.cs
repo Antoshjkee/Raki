@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Azure;
+using Microsoft.Extensions.Options;
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Models;
 using Raki.TelegramBot.API.Services;
@@ -44,6 +45,11 @@ public class EveryoneCommand : BotCustomCommand
             if (currentSession != null)
             {
                 session = currentSession;
+
+                var userTags = _messageConstructor.GetUserTags(players);
+                commandResponse.ReplyToId = currentSession.SessionId + 1;
+                commandResponse.ResponseMessage = "Сессия уже создана." + "\n" + userTags;
+                commandResponse.ResponseMessage += await AddRespondedPlayersAsync(partitionKey, session.SessionId.ToString());
             }
             else
             {
@@ -59,21 +65,21 @@ public class EveryoneCommand : BotCustomCommand
 
                 await _storageService.CreateSessionAsync(newSession);
                 session = newSession;
-            }
 
-            var replyMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, session);
-            commandResponse.ResponseMessage = replyMessage;
+                var replyMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, session);
+                commandResponse.ResponseMessage = replyMessage;
 
-            var keyboard = new InlineKeyboardMarkup(new[]
-            {
-                new[]
+                var keyboard = new InlineKeyboardMarkup(new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Плюс", $"plus-{session.SessionId}"),
-                    InlineKeyboardButton.WithCallbackData("Минус", $"minus-{session.SessionId}")
-                },
-            }); ;
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData("Плюс", $"plus-{session.SessionId}"),
+                        InlineKeyboardButton.WithCallbackData("Минус", $"minus-{session.SessionId}")
+                    },
+                });
 
-            commandResponse.Keyboard = keyboard;
+                commandResponse.Keyboard = keyboard;
+            }
         }
         else
         {
@@ -81,5 +87,31 @@ public class EveryoneCommand : BotCustomCommand
         }
 
         return commandResponse;
+    }
+
+    private async Task<string> AddRespondedPlayersAsync(string partitionKey, string sessionId)
+    {
+        var result = string.Empty;
+
+        var plusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, true);
+        var minusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, false);
+
+        if (!string.IsNullOrEmpty(plusPlayersUserTags))
+        {
+            //👍
+            result += "\n\n" +
+                $"Плюс {char.ConvertFromUtf32(0x1F44D)}" + "\n" +
+                $"{plusPlayersUserTags}";
+        }
+
+        if (!string.IsNullOrEmpty(minusPlayersUserTags))
+        {
+            //👎
+            result += "\n\n" +
+                $"Минус {char.ConvertFromUtf32(0x1F44E)}" + "\n" +
+                $"{minusPlayersUserTags}";
+        }
+
+        return result;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Raki.TelegramBot.API.Commands;
 using Raki.TelegramBot.API.Entities;
+using System.Collections.Concurrent;
 using Telegram.Bot.Types;
 
 namespace Raki.TelegramBot.API.Services
@@ -25,12 +26,7 @@ namespace Raki.TelegramBot.API.Services
             var plusPlayersSession = getPlayerSession.Where(x => x.IsPlus).ToList();
             var minusPlayersSession = getPlayerSession.Where(x => !x.IsPlus).ToList();
 
-            messageResult = $"<b>Metadata</b>" + "\n" + "\n" +
-                $"Session Id : {session.SessionId}" + "\n" +
-                $"Session End Time : {session.SessionEnd.ToString("f")}" + "\n\n" +
-                "<b>Players</b>" + "\n" +
-                $"{userTags}";
-
+            messageResult = $"{userTags}";
             if (plusPlayersSession.Any())
             {
                 var plusPlayers = (await _storageService.GetPlayersAsync(partitionKey,
@@ -38,8 +34,10 @@ namespace Raki.TelegramBot.API.Services
 
                 var plusPlayersUserTags = GetUserTags(plusPlayers);
 
+
+                //👍
                 messageResult += "\n\n" +
-                    "<b>ПЛЮС : </b>" + "\n" +
+                    $"Плюс {char.ConvertFromUtf32(0x1F44D)}" + "\n" +
                     $"{plusPlayersUserTags}";
             }
 
@@ -48,15 +46,16 @@ namespace Raki.TelegramBot.API.Services
                 var minusPlayer = (await _storageService.GetPlayersAsync(partitionKey, minusPlayersSession.Select(x => x.UserId))).ToList();
                 var minusPlayersUserTags = GetUserTags(minusPlayer);
 
+                //👎
                 messageResult += "\n\n" +
-                    "<b>МИНУС : </b>" + "\n" +
+                    $"Минус {char.ConvertFromUtf32(0x1F44E)}" + "\n" +
                     $"{minusPlayersUserTags}";
             }
 
             return messageResult;
         }
 
-        private string GetUserTags(List<PlayerRecordEntity> players)
+        public string GetUserTags(List<PlayerRecordEntity> players)
         {
             var playersWithUserName = players.Where(x => x.UserName != null).ToList();
             var playersWithName = players.Where(x => x.UserName == null).ToList();
@@ -71,12 +70,22 @@ namespace Raki.TelegramBot.API.Services
             var result = default(string?);
             if (playerRecord != null)
             {
-                result = playerRecord.UserName == null 
-                    ? $"<a href=\"tg://user?id={playerRecord.Id}\">{playerRecord.FirstName}</a>" 
+                result = playerRecord.UserName == null
+                    ? $"<a href=\"tg://user?id={playerRecord.Id}\">{playerRecord.FirstName}</a>"
                     : $"@{playerRecord.UserName}";
             }
 
             return result;
+        }
+
+        public async Task<string?> GetRespondedPlayersTagsAsync(string partitionKey, string sessionId, bool responseStatus = true)
+        {
+            var getPlayerSession = await _storageService.GetUsersSessionAsync(partitionKey, sessionId);
+            var respondedPlayers = getPlayerSession.Where(x => x.IsPlus == responseStatus).ToList();
+
+            var players = (await _storageService.GetPlayersAsync(partitionKey, respondedPlayers.Select(x => x.UserId))).ToList();
+
+            return GetUserTags(players);
         }
     }
 }

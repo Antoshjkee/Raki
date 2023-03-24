@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Models;
+using Telegram.Bot.Types;
 
 namespace Raki.TelegramBot.API.Services;
 
@@ -11,7 +12,7 @@ public class StorageService
 
     private static readonly string UserTableClientName = "users";
     private static readonly string SessionsTableClientName = "sessions";
-    private static readonly string UsersSessionsTableClientName = "usersSessions";
+    private static readonly string UsersSessionsTableClientName = "userSessions";
     private readonly Lazy<TableClient> _userTableClient;
     private readonly Lazy<TableClient> _sessionTableClient;
     private readonly Lazy<TableClient> _usersSessionsTableClient;
@@ -65,7 +66,7 @@ public class StorageService
 
     public async Task<PlayerRecordEntity?> GetPlayerByIdAsync(string partitionKey, long id)
     {
-        var filterCondition = $"PartitionKey eq '{partitionKey}' and Id eq '{id}'";
+        var filterCondition = $"PartitionKey eq '{partitionKey}' and Id eq {id}";
         var records = UserTableClient.QueryAsync<PlayerRecordEntity>(filterCondition);
 
         await foreach (var record in records)
@@ -91,6 +92,15 @@ public class StorageService
         return result;
     }
 
+    public Task<IEnumerable<PlayerRecordEntity>> GetPlayersAsync(string partitionKey, IEnumerable<long> userIds)
+    {
+        var filterCondition = $"PartitionKey eq '{partitionKey}'";
+        var records = UserTableClient.Query<PlayerRecordEntity>(filterCondition);
+        var users = records.Where(x => userIds.Contains(x.Id));
+
+        return Task.FromResult(users);
+    }
+
     public async Task DeletePlayerAsync(PlayerRecordEntity existingUser)
     {
         _ = await UserTableClient.DeleteEntityAsync(existingUser.PartitionKey, existingUser.RowKey);
@@ -113,7 +123,7 @@ public class StorageService
 
     public Task<SessionRecordEntity?> GetSessionByIdAsync(string partitionKey, string sessionId)
     {
-        var filterCondition = $"PartitionKey eq '{partitionKey}' and SessionId eq '{sessionId}'";
+        var filterCondition = $"PartitionKey eq '{partitionKey}' and SessionId eq {int.Parse(sessionId)}";
         var records = SessionsTableClient.Query<SessionRecordEntity>(filterCondition);
         return Task.FromResult(records.FirstOrDefault());
     }
@@ -152,9 +162,21 @@ public class StorageService
 
     public Task<PlayerSessionRecordEntity?> GetUserSessionAsync(string partitionKey, string sessionId, long userId)
     {
-        var filterCondition = $"PartitionKey eq '{partitionKey}' and SessionId eq '{sessionId}' and UserId eq '{userId}'";
+        var filterCondition = $"PartitionKey eq '{partitionKey}' and SessionId eq {int.Parse(sessionId)} and UserId eq {userId}";
         var records = UsersSessionsTableClient.Query<PlayerSessionRecordEntity>(filterCondition);
         return Task.FromResult(records.FirstOrDefault());
+    }
+
+    public Task<List<PlayerSessionRecordEntity>> GetUsersSessionAsync(string partitionKey, string sessionId)
+    {
+        var filterCondition = $"PartitionKey eq '{partitionKey}' and SessionId eq {int.Parse(sessionId)}";
+        var records = UsersSessionsTableClient.Query<PlayerSessionRecordEntity>(filterCondition);
+        return Task.FromResult(records.ToList());
+    }
+
+    public async Task UpdateUserSessionAsync(PlayerSessionRecordEntity currentUserSession)
+    {
+        await UsersSessionsTableClient.UpdateEntityAsync(currentUserSession, currentUserSession.ETag);
     }
 
     // Factories

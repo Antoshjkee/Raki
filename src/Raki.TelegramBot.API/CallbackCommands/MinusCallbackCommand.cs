@@ -1,25 +1,24 @@
-﻿using Raki.TelegramBot.API.Commands;
-using Raki.TelegramBot.API.Entities;
+﻿using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace Raki.TelegramBot.API.CallbackCommands
 {
-    public class PlusCallbackCommand : BotCustomCallbackCommand
+    public class MinusCallbackCommand : BotCustomCallbackCommand
     {
         private StorageService _storageService;
         private readonly MessageConstructor _messageConstructor;
         private readonly Services.TelegramBot _telegramBot;
 
-        public PlusCallbackCommand(StorageService storageService, MessageConstructor messageConstructor, Services.TelegramBot telegramBot)
+        public MinusCallbackCommand(StorageService storageService, MessageConstructor messageConstructor, Services.TelegramBot telegramBot)
         {
             _storageService = storageService;
             _messageConstructor = messageConstructor;
             _telegramBot = telegramBot;
         }
 
-        public override string Name => "plus";
+        public override string Name => "minus";
         public override async Task<CallbackCommandResponse> ProcessAsync(CallbackQuery callbackQuery)
         {
             var response = new CallbackCommandResponse();
@@ -59,27 +58,27 @@ namespace Raki.TelegramBot.API.CallbackCommands
                     RowKey = Guid.NewGuid().ToString(),
                     SessionId = int.Parse(sessionId),
                     UserId = callbackQuery.From.Id,
-                    IsPlus = true,
+                    IsPlus = false,
                 };
 
                 await _storageService.AddUserToSession(userSession);
 
-                response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' дал плюса";
+                response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' дал минуса";
             }
-            else if (!currentUserSession.IsPlus)
+            else if (currentUserSession.IsPlus)
             {
-                currentUserSession.IsPlus = true;
+                currentUserSession.IsPlus = false;
                 await _storageService.UpdateUserSessionAsync(currentUserSession);
 
-                response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' передумал и решил плюсануть.";
+                response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' передумал и решил минусануть.";
             }
 
             await _telegramBot.Client.AnswerCallbackQueryAsync(callbackQuery.Id);
 
             if (response.ResponseMessage != null)
             {
-                await _telegramBot.Client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, 
-                    response.ResponseMessage, 
+                await _telegramBot.Client.SendTextMessageAsync(callbackQuery.Message.Chat.Id,
+                    response.ResponseMessage,
                     parseMode: response.Mode);
             }
 

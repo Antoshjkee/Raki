@@ -9,6 +9,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Raki.TelegramBot.API.Commands;
+using System;
 
 namespace Raki.TelegramBot.API.Controllers;
 
@@ -53,21 +54,14 @@ public class TelegramBotWebhookController : ControllerBase
         var update = JsonConvert.DeserializeObject<Update>(requestBody);
         if (update == null) return BadRequest();
 
-        try
+        var result = update.Type switch
         {
-            var result = update.Type switch
-            {
-                UpdateType.Message => await ProcessMessageAsync(update.Message),
-                UpdateType.CallbackQuery => await ProcessCallbackQueryAsync(update.CallbackQuery),
-                _ => Ok(),
-            };
+            UpdateType.Message => await ProcessMessageAsync(update.Message),
+            UpdateType.CallbackQuery => await ProcessCallbackQueryAsync(update.CallbackQuery),
+            _ => Ok(),
+        };
 
-            return result;
-        }
-        catch (Exception exception)
-        {
-            await _telegramBot.Client.SendTextMessageAsync(update.Message.Chat.Id, "Exception : " + exception.Message);
-        }
+        return result;
 
         return Ok();
     }
@@ -76,30 +70,47 @@ public class TelegramBotWebhookController : ControllerBase
     {
         if (message == null) return Ok();
 
-        var commandAttempt = _botCommandService.TryGetCommand(message.Text, out var command);
-        if (commandAttempt)
+        try
         {
-            var commandResponse = await command!.ProcessAsync(message);
-            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id,
-                commandResponse.ResponseMessage,
-                parseMode: commandResponse.Mode,
-                replyMarkup: commandResponse.Keyboard,
-                replyToMessageId: commandResponse.ReplyToId);
-        }
+            var commandAttempt = _botCommandService.TryGetCommand(message.Text, out var command);
+            if (commandAttempt)
+            {
+                var commandResponse = await command!.ProcessAsync(message);
+                await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id,
+                    commandResponse.ResponseMessage,
+                    parseMode: commandResponse.Mode,
+                    replyMarkup: commandResponse.Keyboard,
+                    replyToMessageId: commandResponse.ReplyToId);
+            }
 
-        return Ok();
+            return Ok();
+        }
+        catch (Exception exception)
+        {
+            await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, "Exception : " + exception.Message);
+            return BadRequest(exception.Message);
+        }
     }
 
     private async Task<IActionResult> ProcessCallbackQueryAsync(CallbackQuery callbackQuery)
     {
         if (callbackQuery == null) return Ok();
 
-        var callbackCommandAttempt = _botCommandService.TryGetCallbackCommand(callbackQuery.Data, out var callbackCommand);
-        if (callbackCommandAttempt)
+        try
         {
-            await callbackCommand!.ProcessAsync(callbackQuery);
+            var callbackCommandAttempt = _botCommandService.TryGetCallbackCommand(callbackQuery.Data, out var callbackCommand);
+            if (callbackCommandAttempt)
+            {
+                var response = await callbackCommand!.ProcessAsync(callbackQuery);
+            }
+
+            return Ok();
+        }
+        catch (Exception exception)
+        {
+            await _telegramBot.Client.SendTextMessageAsync(callbackQuery.Message.Chat.Id, "Exception : " + exception.Message);
+            return BadRequest(exception.Message);
         }
 
-        return Ok();
     }
 }

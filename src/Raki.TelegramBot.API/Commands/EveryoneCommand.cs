@@ -12,22 +12,25 @@ public class EveryoneCommand : BotCustomCommand
 {
     private readonly StorageService _storageService;
     private readonly IOptions<TimezoneOptions> _timeZoneOptions;
+    private readonly MessageConstructor _messageConstructor;
 
     public override string Name => "everyone";
 
-    public EveryoneCommand(StorageService storageService, IOptions<TimezoneOptions> timeZoneOptions)
+    public EveryoneCommand(StorageService storageService, IOptions<TimezoneOptions> timeZoneOptions, MessageConstructor messageConstructor)
     {
         _storageService = storageService;
         _timeZoneOptions = timeZoneOptions;
+        _messageConstructor = messageConstructor;
     }
     public override async Task<CommandResponse> ProcessAsync(Message message)
     {
         var commandResponse = new CommandResponse
         {
             Mode = ParseMode.Html
-
         };
-        var players = (await _storageService.GetPlayersAsync(message.Chat.Id.ToString())).ToList();
+
+        var partitionKey = message.Chat.Id.ToString();
+        var players = (await _storageService.GetPlayersAsync(partitionKey)).ToList();
 
         var playersWithUserName = players.Where(x => x.UserName != null).ToList();
         var playersWithName = players.Where(x => x.UserName == null).ToList();
@@ -48,7 +51,7 @@ public class EveryoneCommand : BotCustomCommand
                 var newSession = new SessionRecordEntity
                 {
                     RowKey = Guid.NewGuid().ToString(),
-                    PartitionKey = message.Chat.Id.ToString(),
+                    PartitionKey = partitionKey,
                     SessionStart = sessionLtTime,
                     SessionEnd = sessionLtTime.AddHours(1),
                     SessionId = message.MessageId,
@@ -58,14 +61,8 @@ public class EveryoneCommand : BotCustomCommand
                 session = newSession;
             }
 
-            var resultList = playersWithUserName.Select(x => $"@{x.UserName}").ToList();
-            resultList.AddRange(playersWithName.Select(x => $"<a href=\"tg://user?id={x.Id}\">{x.FirstName}</a>"));
-
-            commandResponse.ResponseMessage =$"<b>Metadata</b>" + "\n" + "\n" +
-                $"Session Id : {session.SessionId}" + "\n" +
-                $"Session End Time : {session.SessionEnd.ToString("f")}" + "\n" + "\n" +
-                "<b>Players</b>" + "\n" +
-                $"{string.Join(' ', resultList)}";
+            var replyMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, session);
+            commandResponse.ResponseMessage = replyMessage;
 
             var keyboard = new InlineKeyboardMarkup(new[]
             {
@@ -82,9 +79,6 @@ public class EveryoneCommand : BotCustomCommand
         {
             commandResponse.ResponseMessage = "Юзеров нет в списке";
         }
-
-
-
 
         return commandResponse;
     }

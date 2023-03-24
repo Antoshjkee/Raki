@@ -13,5 +13,6 @@ namespace Raki.TelegramBot.API.Entities
         // Custom
         public int SessionId { get; set; }
         public long UserId { get; set; }
+        public bool IsPlus { get; set; }
     }
 }

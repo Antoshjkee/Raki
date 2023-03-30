@@ -1,7 +1,4 @@
-﻿using Raki.TelegramBot.API.Commands;
-using Raki.TelegramBot.API.Entities;
-using System.Collections.Concurrent;
-using Telegram.Bot.Types;
+﻿using Raki.TelegramBot.API.Entities;
 
 namespace Raki.TelegramBot.API.Services
 {

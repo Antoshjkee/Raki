@@ -65,16 +65,11 @@ jobs:
           dotnet build
           dotnet test --logger trx --collect:"XPlat Code Coverage" /p:CoverletOutputFormat=opencover
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
-      - name: Setup Test Reporting
-        uses: dorny/test-reporter@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish Test Results
-        uses: dorny/test-reporter@v1
+        uses: EnricoMi/publish-unit-test-result-action@v1
         with:
-          name: Test Results
-          path: '**/TestResults/*.trx'
-          reporter: trx
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: '**/TestResults/*.trx'
         if: always()
 
   #mega-linter:

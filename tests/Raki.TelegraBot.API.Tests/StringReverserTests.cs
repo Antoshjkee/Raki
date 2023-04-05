@@ -8,7 +8,7 @@ public class StringReverserTests
     [InlineData("hello", "olleh")]
     [InlineData("world", "dlrow")]
     [InlineData("abcde", "edcba")]
-    public void ReverseString_InputReversed_ReturnsReversedString(string input, string expected)
+    public void ReverseStringInputReversedReturnsReversedString(string input, string expected)
     {
         // Act
         var actual = StringReverser.ReverseString(input);

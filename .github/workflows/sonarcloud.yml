@@ -63,13 +63,18 @@ jobs:
         run: |
           .\.sonar\scanner\dotnet-sonarscanner begin /k:"Antoshjkee_Raki" /o:"antoshjkee" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
           dotnet build
-          dotnet test --logger trx --collect:"XPlat Code Coverage" /p:CoverletOutputFormat=opencover
+          dotnet test --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" /p:CoverletOutputFormat=opencover
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+      - name: Setup Test Reporting
+        uses: dorny/test-reporter@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: '**/TestResults/*.trx'
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results
+          path: '**/TestResults/*.trx'
+          reporter: trx
         if: always()
 
   #mega-linter:

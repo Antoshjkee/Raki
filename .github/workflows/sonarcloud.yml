@@ -73,5 +73,5 @@ jobs:
         with:
           name: Test Results
           path: '**/TestResults/*.trx'
-          reporter: trx
+          reporter: dotnet-trx
         if: always()

@@ -67,10 +67,10 @@ jobs:
         run: |
           .\.sonar\scanner\dotnet-sonarscanner begin /k:"Antoshjkee_Raki" /o:"antoshjkee" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
           dotnet build
-          dotnet test --logger trx --collect:"XPlat Code Coverage" /p:CoverletOutputFormat=opencover
+          dotnet test --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" /p:CoverletOutputFormat=opencover
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
-      - name: Test
-        run: dotnet test --logger "trx;LogFileName=test-results.trx"
+      #- name: Test
+      #  run: dotnet test --logger "trx;LogFileName=test-results.trx"
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: always()

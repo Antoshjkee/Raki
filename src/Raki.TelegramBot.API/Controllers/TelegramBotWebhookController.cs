@@ -1,3 +1,5 @@
+namespace Raki.TelegramBot.API.Controllers;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -7,17 +9,12 @@ using Raki.TelegramBot.API.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Raki.TelegramBot.API.Commands;
-using System;
-
-namespace Raki.TelegramBot.API.Controllers;
 
 [ApiController]
 [Route("/api/webhook")]
 public class TelegramBotWebhookController : ControllerBase
 {
-    private readonly Services.TelegramBot _telegramBot;
+    private readonly TelegramBot _telegramBot;
     private readonly IOptions<BotOptions> _botConfig;
     private readonly BotCommandService _botCommandService;
     private readonly StorageService _storageService;

@@ -1,27 +1,30 @@
-﻿using Azure;
-using Microsoft.Extensions.Options;
+namespace Raki.TelegramBot.API.Commands;
+
+using ChatGPT.Net;
+using Raki.TelegramBot.API.Services;
+using Newtonsoft.Json;
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Models;
-using Raki.TelegramBot.API.Services;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-
-namespace Raki.TelegramBot.API.Commands;
+using Telegram.Bot;
 
 public class EveryoneCommand : BotCustomCommand
 {
     private readonly StorageService _storageService;
-    private readonly IOptions<TimezoneOptions> _timeZoneOptions;
     private readonly MessageConstructor _messageConstructor;
+    private readonly ChatGpt _chatGpt;
+    private readonly TelegramBot _telegramBot;
 
     public override string Name => "everyone";
 
-    public EveryoneCommand(StorageService storageService, IOptions<TimezoneOptions> timeZoneOptions, MessageConstructor messageConstructor)
+    public EveryoneCommand(StorageService storageService, MessageConstructor messageConstructor, ChatGpt chatGpt, TelegramBot telegramBot)
     {
         _storageService = storageService;
-        _timeZoneOptions = timeZoneOptions;
         _messageConstructor = messageConstructor;
+        _chatGpt = chatGpt;
+        _telegramBot = telegramBot;
     }
     public override async Task<CommandResponse> ProcessAsync(Message message)
     {
@@ -29,6 +32,51 @@ public class EveryoneCommand : BotCustomCommand
         {
             Mode = ParseMode.Html
         };
+
+        //var chatGptResponse = await _chatGpt.Ask("Extract time from this message in JSON format with field name 'Time' which is going to be an array of strings, in ISO 8601 format. " +
+        //     "Replace day, month, and year wirh default value" +
+        //     $"and another boolean field name 'IsSuccess' to indicate extraction was successfull or not. And if multiple dates are presented," +
+        //     $"write to another boolean field called 'IsMultipleDates' if this is the case. Here is message : {message.Text}");
+
+        //var charGtpObjectReponse = JsonConvert.DeserializeObject<ChatGptTimeResponse>(chatGptResponse);
+
+        //if (charGtpObjectReponse?.IsSuccess != null && charGtpObjectReponse.IsSuccess)
+        //{
+        //    if (charGtpObjectReponse.IsMultipleDates)
+        //    {
+        //        var pollQuestion = "Какой время лучше?";
+        //        var pollOptions = charGtpObjectReponse.Time.Select(x => x.ToString("HH:mm"));
+
+        //        await _telegramBot.Client.SendPollAsync(
+        //            chatId: message.Chat.Id,
+        //            question: pollQuestion,
+        //            options: pollOptions,
+        //            type: PollType.Regular,
+        //            isAnonymous: true,
+        //            allowsMultipleAnswers: false
+        //        );
+        //    }
+        //    else
+        //    {
+        //        var chatGptTime = charGtpObjectReponse.Time.First();
+
+        //        var currentDateTime = DateTime.Now;
+        //        var newDateTime = new DateTime(currentDateTime.Year, currentDateTime.Month, currentDateTime.Day,
+        //            chatGptTime.Hour, chatGptTime.Minute, default);
+
+        //        commandResponse.ResponseMessage = $"Вы выбрали время на {newDateTime:F}";
+
+        //        await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id,
+        //            commandResponse.ResponseMessage,
+        //            parseMode: commandResponse.Mode,
+        //            replyMarkup: commandResponse.Keyboard,
+        //            replyToMessageId: commandResponse.ReplyToId);
+
+        //        // TODO : REWRITE
+        //        return commandResponse;
+        //    }
+        //}
+
 
         var partitionKey = message.Chat.Id.ToString();
         var players = (await _storageService.GetPlayersAsync(partitionKey)).ToList();
@@ -69,6 +117,7 @@ public class EveryoneCommand : BotCustomCommand
                 var replyMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, session);
                 commandResponse.ResponseMessage = replyMessage;
 
+
                 var keyboard = new InlineKeyboardMarkup(new[]
                 {
                     new[]
@@ -86,6 +135,13 @@ public class EveryoneCommand : BotCustomCommand
             commandResponse.ResponseMessage = "Юзеров нет в списке";
         }
 
+        var responseMessage = await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id,
+            commandResponse.ResponseMessage,
+            parseMode: commandResponse.Mode,
+            replyMarkup: commandResponse.Keyboard,
+            replyToMessageId: commandResponse.ReplyToId);
+
+        await _telegramBot.Client.PinChatMessageAsync(message.Chat.Id, responseMessage.MessageId, disableNotification: true);
         return commandResponse;
     }
 

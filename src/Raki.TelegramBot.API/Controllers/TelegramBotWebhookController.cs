@@ -19,7 +19,7 @@ public class TelegramBotWebhookController : ControllerBase
     private readonly BotCommandService _botCommandService;
     private readonly StorageService _storageService;
 
-    public TelegramBotWebhookController(Services.TelegramBot telegramBot, IOptions<BotOptions> botConfig,
+    public TelegramBotWebhookController(TelegramBot telegramBot, IOptions<BotOptions> botConfig,
         BotCommandService botCommandService, StorageService storageService)
     {
         _telegramBot = telegramBot;
@@ -35,11 +35,34 @@ public class TelegramBotWebhookController : ControllerBase
         return Ok($"Webhook : '{_botConfig.Value.WebhookUrl}' has been setup");
     }
 
+    [HttpGet("delete")]
+    public async Task<IActionResult> Delete()
+    {
+        await _telegramBot.Client.DeleteWebhookAsync(dropPendingUpdates: true);
+        return Ok($"Webhook : '{_botConfig.Value.WebhookUrl}' has been removed");
+    }
+
     [HttpGet("info")]
     public async Task<IActionResult> Test()
     {
         var info = await _telegramBot.Client.GetWebhookInfoAsync();
         return Ok(info);
+    }
+
+    [HttpGet("flush")]
+    public async Task<IActionResult> Flush()
+    {
+        var updates = await _telegramBot.Client.GetUpdatesAsync(offset: -1, limit: 100);
+
+        if (!updates.Any())
+        {
+            return Ok("No pending updates to flush.");
+        }
+
+        var maxUpdateId = updates.Max(u => u.Id);
+        await _telegramBot.Client.GetUpdatesAsync(offset: maxUpdateId + 1);
+
+        return Ok("Flushed all pending updates.");
     }
 
     [HttpPost]
@@ -71,11 +94,6 @@ public class TelegramBotWebhookController : ControllerBase
             if (commandAttempt)
             {
                 var commandResponse = await command!.ProcessAsync(message);
-                await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id,
-                    commandResponse.ResponseMessage,
-                    parseMode: commandResponse.Mode,
-                    replyMarkup: commandResponse.Keyboard,
-                    replyToMessageId: commandResponse.ReplyToId);
             }
 
             return Ok();

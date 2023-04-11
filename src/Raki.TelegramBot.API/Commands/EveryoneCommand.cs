@@ -76,6 +76,9 @@ public class EveryoneCommand : BotCustomCommand
                     parseMode: commandResponse.Mode, replyMarkup:
                     commandResponse.Keyboard,
                     replyToMessageId: commandResponse.ReplyToId);
+
+            await TelegramBot.Client.PinChatMessageAsync(message.Chat.Id, sessionMessage.MessageId, disableNotification: true);
+            await TelegramBot.Client.DeleteMessageAsync(message.Chat.Id, sessionMessage.MessageId + 1);
         }
         else
         {

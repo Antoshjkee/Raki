@@ -101,7 +101,7 @@ public class StorageService
         return Task.FromResult(users);
     }
 
-    public async Task DeletePlayerAsync(PlayerRecordEntity existingUser) => 
+    public async Task DeletePlayerAsync(PlayerRecordEntity existingUser) =>
         _ = await UserTableClient.DeleteEntityAsync(existingUser.PartitionKey, existingUser.RowKey);
 
     // Session
@@ -132,8 +132,13 @@ public class StorageService
 
         if (session == null)
         {
-            await SessionsTableClient.AddEntityAsync(sessionRecordEntity);
+             await SessionsTableClient.AddEntityAsync(sessionRecordEntity);
         }
+    }
+
+    public async Task UpdateSessionAsync(SessionRecordEntity sessionRecordEntity)
+    {
+        await SessionsTableClient.UpdateEntityAsync(sessionRecordEntity, sessionRecordEntity.ETag);
     }
 
     public Task<SessionRecordEntity?> GetCurrentSessionAsync(string partitionKey)

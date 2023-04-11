@@ -17,4 +17,5 @@ public class SessionRecordEntity : ITableEntity
     public DateTime SessionEnd { get; init; }
     public string? UniqueLetter { get; set; }
     public bool IsActive { get; set; } = true;
+    public int SessionMessageId { get; set; }
 }

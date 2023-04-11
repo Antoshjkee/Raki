@@ -71,23 +71,20 @@ public class EveryoneCommand : BotCustomCommand
 
             var replyMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, newSession);
             commandResponse.ResponseMessage = replyMessage;
+            commandResponse.Keyboard = _messageConstructor.GetKeyboardMarkup(newSession.SessionId);
 
-            var keyboard = new InlineKeyboardMarkup(new[]
-            {
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Плюс", $"plus-{newSession.SessionId}"),
-                        InlineKeyboardButton.WithCallbackData("Плюс (5x0)", $"plus-5x0-{newSession.SessionId}"),
-                        InlineKeyboardButton.WithCallbackData("Минус", $"minus-{newSession.SessionId}")
-                    },
-                });
+            var sessionMessage = await TelegramBot.Client.SendTextMessageAsync(message.Chat.Id, commandResponse.ResponseMessage,
+                    parseMode: commandResponse.Mode, replyMarkup:
+                    commandResponse.Keyboard,
+                    replyToMessageId: commandResponse.ReplyToId);
 
-            commandResponse.Keyboard = keyboard;
-
-            await TelegramBot.Client.SendTextMessageAsync(message.Chat.Id, commandResponse.ResponseMessage,
-                  parseMode: commandResponse.Mode, replyMarkup:
-                  commandResponse.Keyboard,
-                  replyToMessageId: commandResponse.ReplyToId);
+            // TODO : Add session message id to session entity
+            //var createdSession = await _storageService.GetSesssion(partitionKey, newSession.SessionId.ToString());
+            //if (createdSession != null)
+            //{
+            //    newSession.SessionMessageId = sessionMessage.MessageId;
+            //    await _storageService.UpdateSessionAsync(newSession);
+            //}
         }
         else
         {

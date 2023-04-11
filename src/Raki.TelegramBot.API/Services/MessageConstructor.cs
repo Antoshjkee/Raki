@@ -1,6 +1,7 @@
 namespace Raki.TelegramBot.API.Services;
 
 using Raki.TelegramBot.API.Entities;
+using Telegram.Bot.Types.ReplyMarkups;
 
 public class MessageConstructor
 {
@@ -83,5 +84,21 @@ public class MessageConstructor
         var players = (await _storageService.GetPlayersAsync(partitionKey, respondedPlayers.Select(x => x.UserId))).ToList();
 
         return GetUserTags(players);
+    }
+
+    public InlineKeyboardMarkup GetKeyboardMarkup(long sessionId)
+    {
+
+        var keyboard = new InlineKeyboardMarkup(new[]
+        {
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Плюс", $"plus-{sessionId}"),
+                   // InlineKeyboardButton.WithCallbackData("Плюс (5x5)", $"plus-5x0-{sessionId}"),
+                    InlineKeyboardButton.WithCallbackData("Минус", $"minus-{sessionId}")
+                },
+        });
+
+        return keyboard;
     }
 }

@@ -8,7 +8,6 @@ using Raki.TelegramBot.API.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 
 public class EveryoneCommand : BotCustomCommand
 {
@@ -77,14 +76,6 @@ public class EveryoneCommand : BotCustomCommand
                     parseMode: commandResponse.Mode, replyMarkup:
                     commandResponse.Keyboard,
                     replyToMessageId: commandResponse.ReplyToId);
-
-            // TODO : Add session message id to session entity
-            //var createdSession = await _storageService.GetSesssion(partitionKey, newSession.SessionId.ToString());
-            //if (createdSession != null)
-            //{
-            //    newSession.SessionMessageId = sessionMessage.MessageId;
-            //    await _storageService.UpdateSessionAsync(newSession);
-            //}
         }
         else
         {

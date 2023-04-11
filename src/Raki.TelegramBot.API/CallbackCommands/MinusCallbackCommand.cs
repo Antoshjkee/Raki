@@ -29,7 +29,6 @@ public class MinusCallbackCommand : BotCustomCallbackCommand
 
         var session = await _storageService.GetSessionByIdAsync(partitionKey, sessionId);
 
-        // TODO : Send messages inline instead of return response
         if (session == null)
         {
             response.ResponseMessage = "Этой сессии больше не существует";
@@ -43,23 +42,7 @@ public class MinusCallbackCommand : BotCustomCallbackCommand
         }
 
         var keyboard = _messageConstructor.GetKeyboardMarkup(session.SessionId);
-
-
-        //var currentSession = await _storageService.GetCurrentSessionAsync(callbackQuery.Message.Chat.Id.ToString());
-        //if (currentSession == null)
-        //{
-        //    response.ResponseMessage = "Сейчас нет активной сессии";
-        //    return response;
-        //}
-
-        //if (currentSession.SessionId != session.SessionId)
-        //{
-        //    response.ResponseMessage = "Эта сессия устарела";
-        //    return response;
-        //}
-
         var currentUserSession = await _storageService.GetUserSessionAsync(partitionKey, sessionId, callbackQuery.From.Id);
-        //var currentUser = await _storageService.GetPlayerByIdAsync(partitionKey, callbackQuery.From.Id);
 
         if (currentUserSession == null)
         {
@@ -77,9 +60,6 @@ public class MinusCallbackCommand : BotCustomCallbackCommand
             var updatedMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, session);
             await _telegramBot.Client.EditMessageTextAsync(callbackQuery.Message.Chat.Id,
                 session.SessionId + 1, updatedMessage, ParseMode.Html, replyMarkup: keyboard);
-
-            //response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' дал минуса";
-            //response.ResponseMessage += await AddRespondedPlayersAsync(partitionKey, sessionId);
         }
         else if (currentUserSession.IsPlus)
         {
@@ -90,46 +70,9 @@ public class MinusCallbackCommand : BotCustomCallbackCommand
             var updatedMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, session);
             await _telegramBot.Client.EditMessageTextAsync(callbackQuery.Message.Chat.Id,
                 session.SessionId + 1, updatedMessage, ParseMode.Html, replyMarkup: keyboard);
-
-            //response.ResponseMessage = $"'{_messageConstructor.ConstructUserTag(currentUser)}' передумал и решил минусануть.";
-            //response.ResponseMessage += await AddRespondedPlayersAsync(partitionKey, sessionId);
         }
 
         await _telegramBot.Client.AnswerCallbackQueryAsync(callbackQuery.Id);
-
-        //if (response.ResponseMessage != null)
-        //{
-        //    await _telegramBot.Client.SendTextMessageAsync(callbackQuery.Message.Chat.Id,
-        //        response.ResponseMessage,
-        //        parseMode: response.Mode);
-        //}
-
         return response;
     }
-
-    //private async Task<string> AddRespondedPlayersAsync(string partitionKey, string sessionId)
-    //{
-    //    var result = string.Empty;
-
-    //    var plusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, true);
-    //    var minusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, false);
-
-    //    if (!string.IsNullOrEmpty(plusPlayersUserTags))
-    //    {
-    //        //👍
-    //        result += "\n\n" +
-    //            $"Плюс {char.ConvertFromUtf32(0x1F44D)}" + "\n" +
-    //            $"{plusPlayersUserTags}";
-    //    }
-
-    //    if (!string.IsNullOrEmpty(minusPlayersUserTags))
-    //    {
-    //        //👎
-    //        result += "\n\n" +
-    //            $"Минус {char.ConvertFromUtf32(0x1F44E)}" + "\n" +
-    //            $"{minusPlayersUserTags}";
-    //    }
-
-    //    return result;
-    //}
 }

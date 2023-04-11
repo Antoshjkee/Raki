@@ -1,4 +1,4 @@
-﻿namespace Raki.TelegramBot.API.Commands;
+namespace Raki.TelegramBot.API.Commands;
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Services;
 using Telegram.Bot;
@@ -6,10 +6,10 @@ using Telegram.Bot.Types;
 
 public class SubscribeCommand : BotCustomCommand
 {
-    private readonly Services.TelegramBot _telegramBot;
+    private readonly TelegramBot _telegramBot;
     private readonly StorageService _storageService;
 
-    public SubscribeCommand(Services.TelegramBot telegramBot, StorageService storageService)
+    public SubscribeCommand(TelegramBot telegramBot, StorageService storageService) : base(telegramBot)
     {
         _telegramBot = telegramBot;
         _storageService = storageService;

@@ -1,91 +1,87 @@
-﻿using Raki.TelegramBot.API.Commands;
+namespace Raki.TelegramBot.API.Services;
+
 using Raki.TelegramBot.API.Entities;
-using System.Collections.Concurrent;
-using Telegram.Bot.Types;
 
-namespace Raki.TelegramBot.API.Services
+public class MessageConstructor
 {
-    public class MessageConstructor
+    private readonly StorageService _storageService;
+
+    public MessageConstructor(StorageService storageService) => _storageService = storageService;
+
+    public async Task<string> ConstructEveryoneMessageAsync(string partitionKey, SessionRecordEntity session)
     {
-        private readonly StorageService _storageService;
+        var messageResult = "\n\n" +
+            $"Уникальный номер сессии : '<strong>{session.UniqueLetter}</strong>'";
 
-        public MessageConstructor(StorageService storageService)
+        var players = (await _storageService.GetPlayersAsync(partitionKey)).ToList();
+        var userTags = GetUserTags(players);
+
+        var getPlayerSession = await _storageService.GetUsersSessionAsync(partitionKey, session.SessionId.ToString());
+
+        var plusPlayersSession = getPlayerSession.Where(x => x.IsPlus).ToList();
+        var minusPlayersSession = getPlayerSession.Where(x => !x.IsPlus).ToList();
+
+        messageResult += "\n\n" +
+            $"{userTags}";
+
+        if (plusPlayersSession.Any())
         {
-            _storageService = storageService;
+            var plusPlayers = (await _storageService.GetPlayersAsync(partitionKey,
+                plusPlayersSession.Select(x => x.UserId))).ToList();
+
+            var plusPlayersUserTags = GetUserTags(plusPlayers);
+
+
+            //👍
+            messageResult += "\n\n" +
+                $"Плюс {char.ConvertFromUtf32(0x1F44D)}" + "\n" +
+                $"{plusPlayersUserTags}";
         }
 
-        public async Task<string> ConstructEveryoneMessageAsync(string partitionKey, SessionRecordEntity session)
+        if (minusPlayersSession.Any())
         {
-            var messageResult = string.Empty;
+            var minusPlayer = (await _storageService.GetPlayersAsync(partitionKey, minusPlayersSession.Select(x => x.UserId))).ToList();
+            var minusPlayersUserTags = GetUserTags(minusPlayer);
 
-            var players = (await _storageService.GetPlayersAsync(partitionKey)).ToList();
-            var userTags = GetUserTags(players);
-
-            var getPlayerSession = await _storageService.GetUsersSessionAsync(partitionKey, session.SessionId.ToString());
-
-            var plusPlayersSession = getPlayerSession.Where(x => x.IsPlus).ToList();
-            var minusPlayersSession = getPlayerSession.Where(x => !x.IsPlus).ToList();
-
-            messageResult = $"{userTags}";
-            if (plusPlayersSession.Any())
-            {
-                var plusPlayers = (await _storageService.GetPlayersAsync(partitionKey,
-                    plusPlayersSession.Select(x => x.UserId))).ToList();
-
-                var plusPlayersUserTags = GetUserTags(plusPlayers);
-
-
-                //👍
-                messageResult += "\n\n" +
-                    $"Плюс {char.ConvertFromUtf32(0x1F44D)}" + "\n" +
-                    $"{plusPlayersUserTags}";
-            }
-
-            if (minusPlayersSession.Any())
-            {
-                var minusPlayer = (await _storageService.GetPlayersAsync(partitionKey, minusPlayersSession.Select(x => x.UserId))).ToList();
-                var minusPlayersUserTags = GetUserTags(minusPlayer);
-
-                //👎
-                messageResult += "\n\n" +
-                    $"Минус {char.ConvertFromUtf32(0x1F44E)}" + "\n" +
-                    $"{minusPlayersUserTags}";
-            }
-
-            return messageResult;
+            //👎
+            messageResult += "\n\n" +
+                $"Минус {char.ConvertFromUtf32(0x1F44E)}" + "\n" +
+                $"{minusPlayersUserTags}";
         }
 
-        public string GetUserTags(List<PlayerRecordEntity> players)
-        {
-            var playersWithUserName = players.Where(x => x.UserName != null).ToList();
-            var playersWithName = players.Where(x => x.UserName == null).ToList();
-            var resultList = playersWithUserName.Select(x => $"@{x.UserName}").ToList();
-            resultList.AddRange(playersWithName.Select(x => $"<a href=\"tg://user?id={x.Id}\">{x.FirstName}</a>"));
+        return messageResult;
+    }
 
-            return string.Join(' ', resultList);
+    public string GetUserTags(List<PlayerRecordEntity> players)
+    {
+        var playersWithUserName = players.Where(x => x.UserName != null).ToList();
+        var playersWithName = players.Where(x => x.UserName == null).ToList();
+        var resultList = playersWithUserName.Select(x => $"@{x.UserName}").ToList();
+        resultList.AddRange(playersWithName.Select(x => $"<a href=\"tg://user?id={x.Id}\">{x.FirstName}</a>"));
+
+        return string.Join(' ', resultList);
+    }
+
+    public string? ConstructUserTag(PlayerRecordEntity playerRecord)
+    {
+        var result = default(string?);
+        if (playerRecord != null)
+        {
+            result = playerRecord.UserName == null
+                ? $"<a href=\"tg://user?id={playerRecord.Id}\">{playerRecord.FirstName}</a>"
+                : $"@{playerRecord.UserName}";
         }
 
-        public string? ConstructUserTag(PlayerRecordEntity playerRecord)
-        {
-            var result = default(string?);
-            if (playerRecord != null)
-            {
-                result = playerRecord.UserName == null
-                    ? $"<a href=\"tg://user?id={playerRecord.Id}\">{playerRecord.FirstName}</a>"
-                    : $"@{playerRecord.UserName}";
-            }
+        return result;
+    }
 
-            return result;
-        }
+    public async Task<string?> GetRespondedPlayersTagsAsync(string partitionKey, string sessionId, bool responseStatus = true)
+    {
+        var getPlayerSession = await _storageService.GetUsersSessionAsync(partitionKey, sessionId);
+        var respondedPlayers = getPlayerSession.Where(x => x.IsPlus == responseStatus).ToList();
 
-        public async Task<string?> GetRespondedPlayersTagsAsync(string partitionKey, string sessionId, bool responseStatus = true)
-        {
-            var getPlayerSession = await _storageService.GetUsersSessionAsync(partitionKey, sessionId);
-            var respondedPlayers = getPlayerSession.Where(x => x.IsPlus == responseStatus).ToList();
+        var players = (await _storageService.GetPlayersAsync(partitionKey, respondedPlayers.Select(x => x.UserId))).ToList();
 
-            var players = (await _storageService.GetPlayersAsync(partitionKey, respondedPlayers.Select(x => x.UserId))).ToList();
-
-            return GetUserTags(players);
-        }
+        return GetUserTags(players);
     }
 }

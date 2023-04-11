@@ -1,15 +1,15 @@
-﻿using Raki.TelegramBot.API.Entities;
+namespace Raki.TelegramBot.API.Commands;
+
+using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Services;
 using Telegram.Bot.Types;
-
-namespace Raki.TelegramBot.API.Commands;
 
 public class UnsubscribeCommand : BotCustomCommand
 {
     private readonly StorageService _storageService;
-    private readonly Services.TelegramBot _telegramBot;
+    private readonly TelegramBot _telegramBot;
 
-    public UnsubscribeCommand(StorageService storageService, Services.TelegramBot telegramBot)
+    public UnsubscribeCommand(StorageService storageService, TelegramBot telegramBot) : base(telegramBot)
     {
         _storageService = storageService;
         _telegramBot = telegramBot;
@@ -67,7 +67,7 @@ public class UnsubscribeCommand : BotCustomCommand
                 commandResponse.ResponseMessage = "У вас нет прав удалять людей из списка. Только себя.";
                 return commandResponse;
             }
-            
+
             var userName = message.Text!.Replace($"/{Name}", string.Empty).Trim();
             var existingUser = await _storageService.GetPlayerAsync(message.Chat.Id.ToString(), userName);
 

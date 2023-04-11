@@ -1,4 +1,4 @@
-﻿using Azure.Data.Tables;
+using Azure.Data.Tables;
 using Microsoft.Extensions.Options;
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Models;
@@ -101,10 +101,8 @@ public class StorageService
         return Task.FromResult(users);
     }
 
-    public async Task DeletePlayerAsync(PlayerRecordEntity existingUser)
-    {
+    public async Task DeletePlayerAsync(PlayerRecordEntity existingUser) => 
         _ = await UserTableClient.DeleteEntityAsync(existingUser.PartitionKey, existingUser.RowKey);
-    }
 
     // Session
     public async Task<SessionRecordEntity?> GetSesssion(string partitionKey, string sessionId)
@@ -145,6 +143,22 @@ public class StorageService
 
         var records = SessionsTableClient.Query<SessionRecordEntity>(filterCondition);
         return Task.FromResult(records.FirstOrDefault(x => x.SessionEnd >= sessionLtTime));
+    }
+
+    public Task<IEnumerable<SessionRecordEntity>> GetActiveSessionsAsync(string partitionKey)
+    {
+        var filterCondition = $"PartitionKey eq '{partitionKey}' and IsActive eq true";
+
+        var records = SessionsTableClient.Query<SessionRecordEntity>(filterCondition);
+
+        if (records == null)
+        {
+            return Task.FromResult(Enumerable.Empty<SessionRecordEntity>());
+        }
+        else
+        {
+            return Task.FromResult(records.Select(x => x));
+        }
     }
 
     // User Sessions

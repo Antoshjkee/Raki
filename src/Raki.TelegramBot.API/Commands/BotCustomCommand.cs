@@ -1,9 +1,14 @@
 ﻿namespace Raki.TelegramBot.API.Commands;
+
+using Raki.TelegramBot.API.Services;
 using Telegram.Bot.Types;
 
 public abstract class BotCustomCommand
 {
-    public abstract string Name { get;}
+    public abstract string Name { get; }
+    protected TelegramBot TelegramBot { get; }
+
+    public BotCustomCommand(TelegramBot telegramBot) => TelegramBot = telegramBot;
     protected bool Equals(BotCustomCommand other) => Name == other.Name;
 
     public abstract Task<CommandResponse> ProcessAsync(Message message);

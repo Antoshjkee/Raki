@@ -1,17 +1,14 @@
-﻿using Microsoft.Extensions.Options;
+﻿namespace Raki.TelegramBot.API.Services;
+
+using Microsoft.Extensions.Options;
 using Raki.TelegramBot.API.Models;
 using Telegram.Bot;
-
-namespace Raki.TelegramBot.API.Services;
 
 public class TelegramBot
 {
     public ITelegramBotClient Client { get; }
 
-    public TelegramBot(IOptions<BotOptions> botConfig)
-    {
-        Client = new TelegramBotClient(botConfig.Value.BotToken);
-    }
+    public TelegramBot(IOptions<BotOptions> botConfig) => Client = new TelegramBotClient(botConfig.Value.BotToken);
 
     public async Task<bool> IsAdminAsync(long chatId, long userId)
     {

@@ -35,6 +35,15 @@ public class TelegramBotWebhookController : ControllerBase
         return Ok($"Webhook : '{_botConfig.Value.WebhookUrl}' has been setup");
     }
 
+    [HttpGet("reset")]
+    public async Task<IActionResult> Reset()
+    {
+        await _telegramBot.Client.DeleteWebhookAsync(dropPendingUpdates: true);
+        await _telegramBot.Client.SetWebhookAsync(_botConfig.Value.WebhookUrl, allowedUpdates: Array.Empty<UpdateType>());
+        return Ok($"Webhook : '{_botConfig.Value.WebhookUrl}' has been reset");
+    }
+
+
     [HttpGet("info")]
     public async Task<IActionResult> Test()
     {

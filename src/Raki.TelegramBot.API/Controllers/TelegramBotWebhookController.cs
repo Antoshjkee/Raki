@@ -59,8 +59,6 @@ public class TelegramBotWebhookController : ControllerBase
         };
 
         return result;
-
-        return Ok();
     }
 
     private async Task<IActionResult> ProcessMessageAsync(Message message)

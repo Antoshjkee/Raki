@@ -90,32 +90,6 @@ public class EveryoneCommand : BotCustomCommand
         return commandResponse;
     }
 
-    private async Task<string> AddRespondedPlayersAsync(string partitionKey, string sessionId)
-    {
-        var result = string.Empty;
-
-        var plusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, true);
-        var minusPlayersUserTags = await _messageConstructor.GetRespondedPlayersTagsAsync(partitionKey, sessionId, false);
-
-        if (!string.IsNullOrEmpty(plusPlayersUserTags))
-        {
-            //👍
-            result += "\n\n" +
-                $"Плюс {char.ConvertFromUtf32(0x1F44D)}" + "\n" +
-                $"{plusPlayersUserTags}";
-        }
-
-        if (!string.IsNullOrEmpty(minusPlayersUserTags))
-        {
-            //👎
-            result += "\n\n" +
-                $"Минус {char.ConvertFromUtf32(0x1F44E)}" + "\n" +
-                $"{minusPlayersUserTags}";
-        }
-
-        return result;
-    }
-
     private static string? GetNextAvailableLetter(List<SessionRecordEntity> sessions)
     {
         var englishAlphabet = Helper.GetEnglishAlphabet();

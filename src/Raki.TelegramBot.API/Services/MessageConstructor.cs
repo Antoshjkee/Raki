@@ -11,8 +11,12 @@ public class MessageConstructor
 
     public async Task<string> ConstructEveryoneMessageAsync(string partitionKey, SessionRecordEntity session)
     {
-        var messageResult = "\n\n" +
-            $"Уникальный номер сессии : '<strong>{session.UniqueLetter}</strong>'";
+        var messageResult = string.Empty;
+
+        if (session.UniqueLetter != "A")
+        {
+            messageResult += "\n\n" + $"Вторая сессия : '<strong>{session.UniqueLetter}</strong>'" + "\n\n";
+        }
 
         var players = (await _storageService.GetPlayersAsync(partitionKey)).ToList();
         var userTags = GetUserTags(players);
@@ -22,8 +26,7 @@ public class MessageConstructor
         var plusPlayersSession = getPlayerSession.Where(x => x.IsPlus).ToList();
         var minusPlayersSession = getPlayerSession.Where(x => !x.IsPlus).ToList();
 
-        messageResult += "\n\n" +
-            $"{userTags}";
+        messageResult += $"{userTags}";
 
         if (plusPlayersSession.Any())
         {

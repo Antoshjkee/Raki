@@ -1,28 +1,27 @@
-﻿using Azure;
-using Microsoft.Extensions.Options;
+namespace Raki.TelegramBot.API.Commands;
+
 using Raki.TelegramBot.API.Entities;
-using Raki.TelegramBot.API.Models;
 using Raki.TelegramBot.API.Services;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Raki.TelegramBot.API.Commands;
-
 public class EveryoneCommand : BotCustomCommand
 {
     private readonly StorageService _storageService;
-    private readonly IOptions<TimezoneOptions> _timeZoneOptions;
     private readonly MessageConstructor _messageConstructor;
+    private readonly TelegramBot _telegramBot;
 
     public override string Name => "everyone";
 
-    public EveryoneCommand(StorageService storageService, IOptions<TimezoneOptions> timeZoneOptions, MessageConstructor messageConstructor)
+    public EveryoneCommand(StorageService storageService, MessageConstructor messageConstructor, TelegramBot telegramBot)
     {
         _storageService = storageService;
-        _timeZoneOptions = timeZoneOptions;
         _messageConstructor = messageConstructor;
+        _telegramBot = telegramBot;
     }
+
     public override async Task<CommandResponse> ProcessAsync(Message message)
     {
         var commandResponse = new CommandResponse
@@ -85,6 +84,12 @@ public class EveryoneCommand : BotCustomCommand
         {
             commandResponse.ResponseMessage = "Юзеров нет в списке";
         }
+
+
+        await _telegramBot.Client.SendTextMessageAsync(message.Chat.Id, commandResponse.ResponseMessage,
+            parseMode: commandResponse.Mode, replyMarkup:
+            commandResponse.Keyboard,
+            replyToMessageId: commandResponse.ReplyToId);
 
         return commandResponse;
     }

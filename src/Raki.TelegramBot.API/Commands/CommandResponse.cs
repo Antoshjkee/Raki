@@ -1,7 +1,7 @@
+namespace Raki.TelegramBot.API.Commands;
+
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-
-namespace Raki.TelegramBot.API.Commands;
 
 public class CommandResponse
 {
@@ -10,8 +10,5 @@ public class CommandResponse
     public InlineKeyboardMarkup? Keyboard { get; set; }
     public int? ReplyToId { get; set; }
 
-    public CommandResponse()
-    {
-        Mode = ParseMode.Html;
-    }
+    public CommandResponse() => Mode = ParseMode.Html;
 }

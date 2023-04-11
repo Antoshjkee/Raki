@@ -1,8 +1,8 @@
-﻿using Raki.TelegramBot.API.Entities;
+﻿namespace Raki.TelegramBot.API.Commands;
+using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Services;
+using Telegram.Bot;
 using Telegram.Bot.Types;
-
-namespace Raki.TelegramBot.API.Commands;
 
 public class SubscribeCommand : BotCustomCommand
 {
@@ -26,6 +26,7 @@ public class SubscribeCommand : BotCustomCommand
         if (message.From == null)
         {
             commandResponse.ResponseMessage = "Что-то пошло не так...";
+            await SendMessageAsync(commandResponse, message.Chat.Id);
             return commandResponse;
         }
 
@@ -41,6 +42,7 @@ public class SubscribeCommand : BotCustomCommand
                 if (existingUser != null)
                 {
                     commandResponse.ResponseMessage = $"Юзер '{message.From.FirstName}' уже добавлен в список";
+                    await SendMessageAsync(commandResponse, message.Chat.Id);
                     return commandResponse;
                 }
             }
@@ -50,6 +52,7 @@ public class SubscribeCommand : BotCustomCommand
                 if (existingUser != null)
                 {
                     commandResponse.ResponseMessage = $"Юзер '@{userName}' уже добавлен в список";
+                    await SendMessageAsync(commandResponse, message.Chat.Id);
                     return commandResponse;
                 }
             }
@@ -75,6 +78,7 @@ public class SubscribeCommand : BotCustomCommand
             if (!isValidUserName)
             {
                 commandResponse.ResponseMessage = "Юзернэйм указан неверно";
+                await SendMessageAsync(commandResponse, message.Chat.Id);
                 return commandResponse;
             }
 
@@ -82,6 +86,7 @@ public class SubscribeCommand : BotCustomCommand
             if (!isAdmin)
             {
                 commandResponse.ResponseMessage = "У вас нет прав добавлять новых людей в список";
+                await SendMessageAsync(commandResponse, message.Chat.Id);
                 return commandResponse;
             }
 
@@ -89,6 +94,7 @@ public class SubscribeCommand : BotCustomCommand
             if (existingUser != null)
             {
                 commandResponse.ResponseMessage = $"Юзер '{userName}' уже добавлен в список";
+                await SendMessageAsync(commandResponse, message.Chat.Id);
                 return commandResponse;
             }
 
@@ -104,6 +110,13 @@ public class SubscribeCommand : BotCustomCommand
             commandResponse.ResponseMessage = $"Юзера '{userName}' успешно добавили в список";
         }
 
+        await SendMessageAsync(commandResponse, message.Chat.Id);
         return commandResponse;
     }
+
+    private async Task SendMessageAsync(CommandResponse commandResponse, long chatId) =>
+        await _telegramBot.Client.SendTextMessageAsync(chatId, commandResponse.ResponseMessage,
+            parseMode: commandResponse.Mode, replyMarkup:
+            commandResponse.Keyboard,
+            replyToMessageId: commandResponse.ReplyToId);
 }

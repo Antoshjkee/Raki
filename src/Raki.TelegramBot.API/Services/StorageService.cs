@@ -166,6 +166,22 @@ public class StorageService
         }
     }
 
+    public Task<IEnumerable<SessionRecordEntity>> GetActiveSessionsAsync()
+    {
+        var filterCondition = $"IsActive eq true";
+
+        var records = SessionsTableClient.Query<SessionRecordEntity>(filterCondition);
+
+        if (records == null)
+        {
+            return Task.FromResult(Enumerable.Empty<SessionRecordEntity>());
+        }
+        else
+        {
+            return Task.FromResult(records.Select(x => x));
+        }
+    }
+
     // User Sessions
     public async Task AddUserToSession(PlayerSessionRecordEntity playerSessionRecord)
     {
@@ -204,5 +220,4 @@ public class StorageService
         var serviceClient = new TableServiceClient(connectionString);
         return serviceClient.GetTableClient(tableName);
     }
-
 }

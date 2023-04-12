@@ -1,6 +1,5 @@
 using System.Reflection;
 using Raki.TelegramBot.API.Commands;
-using Raki.TelegramBot.API.Models;
 
 namespace Raki.TelegramBot.API.Infrastructure.Extensions;
 

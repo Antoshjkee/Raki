@@ -22,10 +22,12 @@ public class BotCommandService
 
         if (messageText == null) return false;
 
+        messageText = messageText.ToLowerInvariant();
+
         // TODO : integrate it better
-        if (messageText.Contains("/everyone") || messageText.Contains("@everyone"))
+        if (messageText.Contains("/all") || messageText.Contains("@all"))
         {
-            command = _botCommands.FirstOrDefault(x => x.Name == "everyone");
+            command = _botCommands.FirstOrDefault(x => x.Name == "all");
             return true;
         }
 

@@ -15,7 +15,12 @@ public class MessageConstructor
 
         if (session.UniqueLetter != "A")
         {
-            messageResult += "\n\n" + $"Вторая сессия : '<strong>{session.UniqueLetter}</strong>'" + "\n\n";
+            messageResult += "\n\n" + $"Дополнитальная сессия : '<strong>{session.UniqueLetter}</strong>'" + "\n\n";
+        }
+
+        if (session.SessionStart != null)
+        {
+            messageResult += "\n\n" + $"Начало в '<strong>{session.SessionStart.Value:HH:mm}</strong>'" + "\n\n";
         }
 
         var players = (await _storageService.GetPlayersAsync(partitionKey)).ToList();

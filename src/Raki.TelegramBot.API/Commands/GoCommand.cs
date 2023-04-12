@@ -1,6 +1,8 @@
 namespace Raki.TelegramBot.API.Commands;
 
+using ChatGPT.Net;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Raki.TegramBot.Core.Services;
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Models;
@@ -14,15 +16,17 @@ public class GoCommand : BotCustomCommand
     private readonly StorageService _storageService;
     private readonly MessageConstructor _messageConstructor;
     private readonly IOptions<AppConfigOptions> _appConfigOptions;
+    private readonly ChatGpt _chatGpt;
 
     public override string Name => "go";
 
     public GoCommand(StorageService storageService, MessageConstructor messageConstructor, TelegramBot telegramBot,
-        IOptions<AppConfigOptions> appConfigOptions) : base(telegramBot)
+        IOptions<AppConfigOptions> appConfigOptions, ChatGpt chatGpt) : base(telegramBot)
     {
         _storageService = storageService;
         _messageConstructor = messageConstructor;
         _appConfigOptions = appConfigOptions;
+        _chatGpt = chatGpt;
     }
 
     public override async Task<CommandResponse> ProcessAsync(Message message)
@@ -46,49 +50,57 @@ public class GoCommand : BotCustomCommand
             return commandResponse;
         }
 
-        var players = (await _storageService.GetPlayersAsync(partitionKey)).ToList();
+        DateTime? suggestedTime = default;
+        var sessionLtTime = DateTime.UtcNow.AddHours(2);
+        var midnight = new DateTime(sessionLtTime.Year, sessionLtTime.Month, sessionLtTime.Day, 23, 59, 59, DateTimeKind.Utc);
 
-        var playersWithUserName = players.Where(x => x.UserName != null).ToList();
-        var playersWithName = players.Where(x => x.UserName == null).ToList();
+        var chatGptResponse = await _chatGpt.Ask($@"
+                Here is a format of your response : 
+                {{
+                    ""Time"" : ""2023-04-12T15:30:00"",
+                    ""IsSuccess"" : true
+                }}
+        You should try to extact the time from the message I am going to provide you. 
+        If its looks like incorrect time or message does not contain time at all, you should mark ""IsSuccess"" as false and ""Time"" field should be null. 
+        Here is the message : {message.Text}");
 
-        if (players.Any())
+        var charGtpObjectReponse = JsonConvert.DeserializeObject<ChatGptTimeResponse>(chatGptResponse);
+
+        if (charGtpObjectReponse != null && charGtpObjectReponse.IsSuccess)
         {
-            var sessionLtTime = DateTime.UtcNow.AddHours(2);
-            var midnight = new DateTime(sessionLtTime.Year, sessionLtTime.Month, sessionLtTime.Day, 23, 59, 59, DateTimeKind.Utc);
+            // TODO : Consider multiple times?
+            var responseTime = charGtpObjectReponse.Time;
 
-            var newSession = new SessionRecordEntity
+            if (responseTime != null)
             {
-                RowKey = Guid.NewGuid().ToString(),
-                PartitionKey = partitionKey,
-                SessionEnd = midnight,
-                SessionStart = sessionLtTime,
-                UniqueLetter = GetNextAvailableLetter(activeSessions.ToList()),
-                SessionId = message.MessageId,
-            };
-
-            await _storageService.CreateSessionAsync(newSession);
-
-            var replyMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, newSession);
-            commandResponse.ResponseMessage = replyMessage;
-            commandResponse.Keyboard = _messageConstructor.GetKeyboardMarkup(newSession.SessionId);
-
-            var sessionMessage = await TelegramBot.Client.SendTextMessageAsync(message.Chat.Id, commandResponse.ResponseMessage,
-                    parseMode: commandResponse.Mode, replyMarkup:
-                    commandResponse.Keyboard,
-                    replyToMessageId: commandResponse.ReplyToId);
-
-            await TelegramBot.Client.PinChatMessageAsync(message.Chat.Id, sessionMessage.MessageId, disableNotification: true);
-            await TelegramBot.Client.DeleteMessageAsync(message.Chat.Id, sessionMessage.MessageId + 1);
+                suggestedTime = new DateTime(sessionLtTime.Year, sessionLtTime.Month, sessionLtTime.Day,
+                    responseTime.Value.Hour, responseTime.Value.Minute, responseTime.Value.Second, DateTimeKind.Utc);
+            }
         }
-        else
+
+        var newSession = new SessionRecordEntity
         {
-            commandResponse.ResponseMessage = "Юзеров нет в списке";
-            await TelegramBot.Client.SendTextMessageAsync(message.Chat.Id, commandResponse.ResponseMessage,
+            RowKey = Guid.NewGuid().ToString(),
+            PartitionKey = partitionKey,
+            SessionEnd = midnight,
+            SessionStart = suggestedTime,
+            UniqueLetter = GetNextAvailableLetter(activeSessions.ToList()),
+            SessionId = message.MessageId,
+        };
+
+        await _storageService.CreateSessionAsync(newSession);
+
+        var replyMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, newSession);
+        commandResponse.ResponseMessage = replyMessage;
+        commandResponse.Keyboard = _messageConstructor.GetKeyboardMarkup(newSession.SessionId);
+
+        var sessionMessage = await TelegramBot.Client.SendTextMessageAsync(message.Chat.Id, commandResponse.ResponseMessage,
                 parseMode: commandResponse.Mode, replyMarkup:
                 commandResponse.Keyboard,
                 replyToMessageId: commandResponse.ReplyToId);
-            return commandResponse;
-        }
+
+        await TelegramBot.Client.PinChatMessageAsync(message.Chat.Id, sessionMessage.MessageId, disableNotification: true);
+        await TelegramBot.Client.DeleteMessageAsync(message.Chat.Id, sessionMessage.MessageId + 1);
 
         return commandResponse;
     }

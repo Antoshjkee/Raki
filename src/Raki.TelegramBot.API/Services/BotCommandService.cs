@@ -31,6 +31,12 @@ public class BotCommandService
             return true;
         }
 
+        if (messageText.Contains("/go") || messageText.Contains("@go"))
+        {
+            command = _botCommands.FirstOrDefault(x => x.Name == "go");
+            return true;
+        }
+
         if (!messageText.StartsWith("/")) return false;
 
         var rawCommand = messageText.Replace("/", string.Empty)

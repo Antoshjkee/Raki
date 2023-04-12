@@ -1,5 +1,6 @@
 namespace Raki.TelegramBot.API;
 
+using ChatGPT.Net;
 using Quartz;
 using Raki.TelegramBot.API.Infrastructure.Extensions;
 using Raki.TelegramBot.API.Jobs;
@@ -12,12 +13,14 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Options
         builder.Services.Configure<BotOptions>(builder.Configuration.GetSection("BotConfig"));
         builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
         builder.Services.Configure<TimezoneOptions>(builder.Configuration.GetSection("TimeZone"));
         builder.Services.Configure<AppConfigOptions>(builder.Configuration.GetSection("AppConfig"));
+        builder.Services.Configure<ChatGptOptions>(builder.Configuration.GetSection("ChatGpt"));
 
-        builder.Services.AddSingleton<Services.TelegramBot>();
+        builder.Services.AddSingleton<TelegramBot>();
         builder.Services.AddScoped<StorageService>();
 
         // Bot registers
@@ -43,6 +46,10 @@ public class Program
             .WithDescription("Session cleanup cron job trigger"));
         });
 
+        // ChatGPT
+        builder.Services.AddScoped(implementationFactory =>
+            new ChatGpt(builder.Configuration.GetSection("ChatGpt").GetValue<string>("ApiKey")));
+
         builder.Services.AddQuartzServer(options =>
         {
             options.WaitForJobsToComplete = true;
@@ -55,7 +62,7 @@ public class Program
 
         if (app.Environment.IsProduction())
         {
-           app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
         }
 
         app.UseAuthorization();

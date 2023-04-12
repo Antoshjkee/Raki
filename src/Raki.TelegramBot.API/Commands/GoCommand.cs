@@ -9,15 +9,15 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-public class EveryoneCommand : BotCustomCommand
+public class GoCommand : BotCustomCommand
 {
     private readonly StorageService _storageService;
     private readonly MessageConstructor _messageConstructor;
     private readonly IOptions<AppConfigOptions> _appConfigOptions;
 
-    public override string Name => "everyone";
+    public override string Name => "go";
 
-    public EveryoneCommand(StorageService storageService, MessageConstructor messageConstructor, TelegramBot telegramBot,
+    public GoCommand(StorageService storageService, MessageConstructor messageConstructor, TelegramBot telegramBot,
         IOptions<AppConfigOptions> appConfigOptions) : base(telegramBot)
     {
         _storageService = storageService;

@@ -1,25 +1,24 @@
 namespace Raki.TelegramBot.API.CallbackCommands;
-
 using Raki.TelegramBot.API.Entities;
 using Raki.TelegramBot.API.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-public class MinusCallbackCommand : BotCustomCallbackCommand
+public class Plus5x5CallbackCommand : BotCustomCallbackCommand
 {
     private StorageService _storageService;
     private readonly MessageConstructor _messageConstructor;
     private readonly TelegramBot _telegramBot;
 
-    public MinusCallbackCommand(StorageService storageService, MessageConstructor messageConstructor, TelegramBot telegramBot)
+    public Plus5x5CallbackCommand(StorageService storageService, MessageConstructor messageConstructor, TelegramBot telegramBot)
     {
         _storageService = storageService;
         _messageConstructor = messageConstructor;
         _telegramBot = telegramBot;
     }
 
-    public override string Name => "minus";
+    public override string Name => "plus5x5";
     public override async Task<CallbackCommandResponse> ProcessAsync(CallbackQuery callbackQuery)
     {
         var response = new CallbackCommandResponse();
@@ -53,8 +52,8 @@ public class MinusCallbackCommand : BotCustomCallbackCommand
                 RowKey = Guid.NewGuid().ToString(),
                 SessionId = int.Parse(sessionId),
                 UserId = callbackQuery.From.Id,
+                IsPlus5x5 = true,
                 IsPlus5x0 = false,
-                IsPlus5x5 = false,
             };
 
             await _storageService.AddUserToSession(userSession);
@@ -63,13 +62,10 @@ public class MinusCallbackCommand : BotCustomCallbackCommand
             await _telegramBot.Client.EditMessageTextAsync(callbackQuery.Message.Chat.Id,
                 messageId, updatedMessage, ParseMode.Html, replyMarkup: keyboard);
         }
-        else if (currentUserSession.IsPlus5x0 || currentUserSession.IsPlus5x5)
+        else if (!currentUserSession.IsPlus5x5)
         {
-            currentUserSession.IsPlus5x0 = false;
-            currentUserSession.IsPlus5x5 = false;
-
+            currentUserSession.IsPlus5x5 = true;
             await _storageService.UpdateUserSessionAsync(currentUserSession);
-
 
             var updatedMessage = await _messageConstructor.ConstructEveryoneMessageAsync(partitionKey, session);
             await _telegramBot.Client.EditMessageTextAsync(callbackQuery.Message.Chat.Id,
@@ -77,6 +73,7 @@ public class MinusCallbackCommand : BotCustomCallbackCommand
         }
 
         await _telegramBot.Client.AnswerCallbackQueryAsync(callbackQuery.Id);
+
         return response;
     }
 }

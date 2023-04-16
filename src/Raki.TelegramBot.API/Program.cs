@@ -11,13 +11,15 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        // Default
+        builder.Services.AddHttpClient();
 
         builder.Services.Configure<BotOptions>(builder.Configuration.GetSection("BotConfig"));
         builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
         builder.Services.Configure<TimezoneOptions>(builder.Configuration.GetSection("TimeZone"));
         builder.Services.Configure<AppConfigOptions>(builder.Configuration.GetSection("AppConfig"));
 
-        builder.Services.AddSingleton<Services.TelegramBot>();
+        builder.Services.AddSingleton<TelegramBot>();
         builder.Services.AddScoped<StorageService>();
 
         // Bot registers
@@ -48,6 +50,11 @@ public class Program
             options.WaitForJobsToComplete = true;
         });
 
+        // Ngrok
+        if (builder.Environment.IsDevelopment())
+        {
+            builder.Services.AddHostedService<TunnelService>();
+        }
 
         builder.Services.AddControllers();
 
@@ -55,7 +62,7 @@ public class Program
 
         if (app.Environment.IsProduction())
         {
-           app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
         }
 
         app.UseAuthorization();

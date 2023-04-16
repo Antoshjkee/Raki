@@ -60,8 +60,10 @@ public class GoCommand : BotCustomCommand
                     ""Time"" : ""2023-04-12T15:30:00"",
                     ""IsSuccess"" : true
                 }}
+        You ONLY reponse should be JSON.
         You should try to extact the time from the message I am going to provide you. 
-        If its looks like incorrect time or message does not contain time at all, you should mark ""IsSuccess"" as false and ""Time"" field should be null. 
+        If its looks like incorrect time or message does not contain time at all, you should mark ""IsSuccess"" as false 
+        and ""Time"" field should be null. 
         Here is the message : {message.Text}");
 
         var charGtpObjectReponse = JsonConvert.DeserializeObject<ChatGptTimeResponse>(chatGptResponse);

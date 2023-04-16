@@ -18,20 +18,29 @@ public class TelegramBotWebhookController : ControllerBase
     private readonly IOptions<BotOptions> _botConfig;
     private readonly BotCommandService _botCommandService;
     private readonly StorageService _storageService;
+    private readonly IWebHostEnvironment _webHostEnvironment;
 
     public TelegramBotWebhookController(Services.TelegramBot telegramBot, IOptions<BotOptions> botConfig,
-        BotCommandService botCommandService, StorageService storageService)
+        BotCommandService botCommandService, StorageService storageService, IWebHostEnvironment webHostEnvironment)
     {
         _telegramBot = telegramBot;
         _botConfig = botConfig;
         _botCommandService = botCommandService;
         _storageService = storageService;
+        _webHostEnvironment = webHostEnvironment;
     }
 
     [HttpGet("setup")]
-    public async Task<IActionResult> Setup()
+    public async Task<IActionResult> Setup([FromQuery] string? url)
     {
-        await _telegramBot.Client.SetWebhookAsync(_botConfig.Value.WebhookUrl, allowedUpdates: Array.Empty<UpdateType>());
+        var wehookUrl = _botConfig.Value.WebhookUrl;
+
+        if (url != null && _webHostEnvironment.IsDevelopment())
+        {
+            wehookUrl = url;
+        }
+
+        await _telegramBot.Client.SetWebhookAsync(wehookUrl, allowedUpdates: Array.Empty<UpdateType>());
         return Ok($"Webhook : '{_botConfig.Value.WebhookUrl}' has been setup");
     }
 
